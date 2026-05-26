@@ -30,32 +30,105 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 4. توليد ملفات أندرويد وتصفير الكاش مع ربط الحزمة باسمها الصحيح
+      # 4. توليد ملفات أندرويد
       - name: Recreate Android platform files
         run: |
-          flutter create . --platforms=android --project-name=chat_app
+          flutter create . --platforms=android --project-name=chat_app --org=com.judeadaiy
           flutter pub get
 
-      # 5. تكوين إعدادات أندرويد لمنع انهيار مكاتب الـ SDK
+      # 5. اضافة تصاريح المايك والنت والكاميرا
+      - name: Add Permissions
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          sed -i '/<\/manifest>/i \
+              <uses-permission android:name="android.permission.INTERNET"\/> \
+              <uses-permission android:name="android.permission.RECORD_AUDIO"\/> \
+              <uses-permission android:name="android.permission.CAMERA"\/> \
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"\/> \
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"\/> \
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/> \
+              <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>' $MANIFEST
+          sed -i '/<application/s/android:name/ android:usesCleartextTraffic="true" android:name/' $MANIFEST
+
+      # 6. اضافة مكتبات جوجل + انشاء google-services.json وهمي
+      - name: Setup Google Services
+        run: |
+          # android/build.gradle
+          sed -i '/dependencies {/a \
+                  classpath "com.google.gms:google-services:4.4.1"' android/build.gradle
+          
+          # android/app/build.gradle
+          echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+          
+          # انشاء google-services.json وهمي
+          mkdir -p android/app
+          echo '{
+            "project_info": {
+              "project_number": "123456789",
+              "project_id": "chat-app-auto",
+              "storage_bucket": "chat-app-auto.appspot.com"
+            },
+            "client": [{
+              "client_info": {
+                "mobilesdk_app_id": "1:123456789:android:abcdef",
+                "android_client_info": {"package_name": "com.judeadaiy.chat_app"}
+              },
+              "api_key": [{"current_key": "AIzaSyDummy-AutoBuild-Key"}]
+            }]
+          }' > android/app/google-services.json
+
+      # 7. انشاء keystore وتوقيع التطبيق
+      - name: Create Keystore and Sign App
+        run: |
+          keytool -genkey -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload \
+            -dname "CN=Auto Build, OU=Dev, O=ChatApp, L=Basra, C=IQ" \
+            -storepass android123 -keypass android123
+          
+          echo "storePassword=android123" > android/key.properties
+          echo "keyPassword=android123" >> android/key.properties
+          echo "keyAlias=upload" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+          
+          APP_GRADLE="android/app/build.gradle"
+          sed -i '/android {/i \
+          def keystoreProperties = new Properties()\
+          def keystorePropertiesFile = rootProject.file("key.properties")\
+          keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\
+          ' $APP_GRADLE
+          
+          sed -i '/buildTypes {/i \
+             signingConfigs {\
+                 release {\
+                     keyAlias keystoreProperties["keyAlias"]\
+                     keyPassword keystoreProperties["keyPassword"]\
+                     storeFile file(keystoreProperties["storeFile"])\
+                     storePassword keystoreProperties["storePassword"]\
+                 }\
+             }\
+          ' $APP_GRADLE
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
+
+      # 8. تكوين إعدادات أندرويد
       - name: Patch Android build configuration
         run: |
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=21" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
 
-      # 6. الخطوة السحرية: إصلاح الاستدعاءات والمسميات القديمة برمجياً وتلقائياً
-      - name: Auto-fix Code Deprecations and Imports
+      # 9. اصلاح الكود تلقائياً
+      - name: Auto-fix Code Deprecations
         run: |
           dart fix --apply
+          flutter pub run flutter_launcher_icons || true
 
-      # 7. بناء نسخة الـ APK
-      - name: Build APK
+      # 10. بناء APK موقع
+      - name: Build Signed APK
         run: |
           flutter build apk --release --no-tree-shake-icons
 
-      # 8. رفع الملف للتحميل مباشر إلى هاتفك
+      # 11. رفع الملف للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaChat-Release-APK
+          name: SeaChat-Release-Signed-APK
           path: build/app/outputs/flutter-apk/app-release.apk
