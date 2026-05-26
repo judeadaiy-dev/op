@@ -1,0 +1,51 @@
+name: Build Flutter APK
+
+on:
+  push:
+    branches:
+      - main # أو اسم الفرع الرئيسي لديك إذا كان master
+  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً من موقع جيت هاب
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. جلب كود المشروع من الغيت هاب
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. تثبيت لغة الجافا الضرورية لبناء الأندرويد
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 3. تثبيت بيئة فلاتر سحابياً
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0' # نسخة مستقرة ومتوافقة مع حزم مشروعك
+          channel: 'stable'
+          cache: true
+
+      # 4. إعادة إنشاء مجلد الأندرويد والملفات الأساسية تلقائياً
+      - name: Recreate Android platform files
+        run: |
+          flutter create . --platforms=android
+
+      # 5. جلب الحزم والمكتبات المذكورة في pubspec.yaml
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 6. بناء نسخة الـ APK الاحترافية (Release)
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      # 7. رفع الـ APK الناتج لتستطيع تحميله مباشرة إلى هاتفك
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeaChat-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
