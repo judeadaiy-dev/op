@@ -40,22 +40,20 @@ jobs:
               <uses-permission android:name="android.permission.RECORD_AUDIO"\/> \
               <uses-permission android:name="android.permission.CAMERA"\/> \
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS"\/> \
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"\/> \
-              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/> \
               <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>' $MANIFEST
           sed -i '/<application/s/android:name/ android:usesCleartextTraffic="true" android:name/' $MANIFEST
 
-      # 6. اضافة مكتبات جوجل بالترتيب الصحيح
+      # 6. اضافة Google Services بالطريقة القديمة المضمونة
       - name: Setup Google Services
         run: |
-          # اولا: android/build.gradle - نضيف classpath
+          # اولا: android/build.gradle - نضيف classpath داخل buildscript
           BUILD_GRADLE="android/build.gradle"
-          sed -i '/com.android.tools.build:gradle/a \
+          sed -i '/dependencies {/a \
                   classpath "com.google.gms:google-services:4.4.1"' $BUILD_GRADLE
           
-          # ثانيا: android/app/build.gradle - نطبق البلاكن
+          # ثانيا: android/app/build.gradle - نطبق البلاكن آخر سطر
           APP_GRADLE="android/app/build.gradle"
-          sed -i '1i apply plugin: "com.google.gms.google-services"' $APP_GRADLE
+          echo 'apply plugin: "com.google.gms.google-services"' >> $APP_GRADLE
           
           # ثالثا: انشاء google-services.json
           mkdir -p android/app
@@ -85,8 +83,7 @@ jobs:
           echo "storeFile=upload-keystore.jks" >> android/key.properties
           
           APP_GRADLE="android/app/build.gradle"
-          sed -i '/apply plugin: "com.android.application"/a \
-          \
+          sed -i '/android {/i \
           def keystoreProperties = new Properties()\
           def keystorePropertiesFile = rootProject.file("key.properties")\
           keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\
