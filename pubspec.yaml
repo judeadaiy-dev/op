@@ -32,13 +32,33 @@ dependencies:
   timeago: ^3.6.1
   uuid: ^4.4.0
 
+  # Permissions للمايك والنت
+  permission_handler: ^11.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+  
+  # توليد الأيقونة بكل المقاسات
+  flutter_launcher_icons: ^0.13.1
+
+# إعدادات الأيقونة
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_logo.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  adaptive_icon_background: "#1E88E5"
+  adaptive_icon_foreground: "assets/images/app_logo.png"
 
 flutter:
   uses-material-design: true
+
+  # الصور
+  assets:
+    - assets/images/
 
   # الخطوط
   fonts:
@@ -49,6 +69,3 @@ flutter:
           weight: 700
         - asset: assets/fonts/Cairo-SemiBold.ttf
           weight: 600
-
-  assets:
-    - assets/images/
