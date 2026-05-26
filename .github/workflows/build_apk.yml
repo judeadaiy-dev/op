@@ -3,26 +3,26 @@ name: Build Flutter APK
 on:
   push:
     branches:
-      - main # أو master حسب اسم الفرع الرئيسي في مستودعك الجديد
-  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً بضغطة زر من الموقع
+      - main # أو master حسب فرعك الرئيسي
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. جلب كود المشروع من الغيت هاب
+      # 1. جلب كود المشروع
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. تثبيت لغة الجافا الضرورية لبناء الأندرويد
+      # 2. تثبيت الجافا (إصدار 17 متوافق جداً مع أندرويد الحديث)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. تثبيت بيئة فلاتر سحابياً
+      # 3. تثبيت بيئة فلاتر
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -30,22 +30,29 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 4. توليد مجلد الأندرويد تلقائياً بربطه باسم الحزمة الصحيح المتوافق مع الـ pubspec
+      # 4. توليد مجلد الأندرويد من الصفر باسم مشروعك
       - name: Recreate Android platform files
         run: |
           flutter create . --platforms=android --project-name=chat_app
+
+      # 5. إصلاح ملف build.gradle تلقائياً وتحديد قيم الـ SDK المطلوبة لمنع إنهيار المكتبات
+      - name: Patch Android build configuration
+        run: |
+          echo "flutter.compileSdkVersion=34" >> android/local.properties
+          echo "flutter.minSdkVersion=21" >> android/local.properties
+          echo "flutter.targetSdkVersion=34" >> android/local.properties
+
+      # 6. جلب وتحديث المكتبات المتوافقة
       - name: Install dependencies
         run: |
           flutter pub get
-          flutter pub upgrade --major-versions
 
-
-      # 6. بناء نسخة الـ APK الاحترافية (Release)
+      # 7. بناء نسخة الـ APK
       - name: Build APK
         run: |
           flutter build apk --release --no-tree-shake-icons
 
-      # 7. رفع الـ APK الناتج لتستطيع تحميله مباشرة إلى هاتفك
+      # 8. رفع الملف للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
