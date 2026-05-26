@@ -11,18 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. جلب كود المشروع
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. تثبيت الجافا
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. تثبيت بيئة فلاتر
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -30,13 +27,11 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 4. توليد ملفات أندرويد
       - name: Recreate Android platform files
         run: |
           flutter create . --platforms=android --project-name=chat_app --org=com.judeadaiy
           flutter pub get
 
-      # 5. اضافة تصاريح المايك والنت والكاميرا
       - name: Add Permissions
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
@@ -50,34 +45,34 @@ jobs:
               <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>' $MANIFEST
           sed -i '/<application/s/android:name/ android:usesCleartextTraffic="true" android:name/' $MANIFEST
 
-      # 6. اضافة مكتبات جوجل + انشاء google-services.json وهمي
+      # 6. اضافة مكتبات جوجل بالترتيب الصحيح
       - name: Setup Google Services
         run: |
-          # android/build.gradle
-          sed -i '/dependencies {/a \
-                  classpath "com.google.gms:google-services:4.4.1"' android/build.gradle
+          # اولا: android/build.gradle - نضيف classpath
+          BUILD_GRADLE="android/build.gradle"
+          sed -i '/com.android.tools.build:gradle/a \
+                  classpath "com.google.gms:google-services:4.4.1"' $BUILD_GRADLE
           
-          # android/app/build.gradle
-          echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+          # ثانيا: android/app/build.gradle - نطبق البلاكن
+          APP_GRADLE="android/app/build.gradle"
+          sed -i '1i apply plugin: "com.google.gms.google-services"' $APP_GRADLE
           
-          # انشاء google-services.json وهمي
+          # ثالثا: انشاء google-services.json
           mkdir -p android/app
           echo '{
             "project_info": {
               "project_number": "123456789",
-              "project_id": "chat-app-auto",
-              "storage_bucket": "chat-app-auto.appspot.com"
+              "project_id": "chat-app-auto"
             },
             "client": [{
               "client_info": {
                 "mobilesdk_app_id": "1:123456789:android:abcdef",
                 "android_client_info": {"package_name": "com.judeadaiy.chat_app"}
               },
-              "api_key": [{"current_key": "AIzaSyDummy-AutoBuild-Key"}]
+              "api_key": [{"current_key": "AIzaSyDummy-Key"}]
             }]
           }' > android/app/google-services.json
 
-      # 7. انشاء keystore وتوقيع التطبيق
       - name: Create Keystore and Sign App
         run: |
           keytool -genkey -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload \
@@ -90,7 +85,8 @@ jobs:
           echo "storeFile=upload-keystore.jks" >> android/key.properties
           
           APP_GRADLE="android/app/build.gradle"
-          sed -i '/android {/i \
+          sed -i '/apply plugin: "com.android.application"/a \
+          \
           def keystoreProperties = new Properties()\
           def keystorePropertiesFile = rootProject.file("key.properties")\
           keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\
@@ -108,25 +104,21 @@ jobs:
           ' $APP_GRADLE
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
-      # 8. تكوين إعدادات أندرويد
       - name: Patch Android build configuration
         run: |
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=21" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
 
-      # 9. اصلاح الكود تلقائياً
       - name: Auto-fix Code Deprecations
         run: |
           dart fix --apply
           flutter pub run flutter_launcher_icons || true
 
-      # 10. بناء APK موقع
       - name: Build Signed APK
         run: |
           flutter build apk --release --no-tree-shake-icons
 
-      # 11. رفع الملف للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
