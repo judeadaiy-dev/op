@@ -1,0 +1,128 @@
+workflows:
+  android-release:
+    name: Android Release Build
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      java: 17
+      vars:
+        PACKAGE_NAME: "com.judeadaiy.chatapp"
+    scripts:
+      - name: 1. انشاء مجلدات Android + iOS
+        script: flutter create .
+
+      - name: 2. اضافة تصاريح المايك والنت والكاميرا والاشعارات
+        script: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          # اضافة كل التصاريح قبل </manifest>
+          sed -i '/<\/manifest>/i \
+              <uses-permission android:name="android.permission.INTERNET"\/> \
+              <uses-permission android:name="android.permission.RECORD_AUDIO"\/> \
+              <uses-permission android:name="android.permission.CAMERA"\/> \
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"\/> \
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"\/> \
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/>' $MANIFEST
+          
+          # السماح بالاتصال بـ Supabase http
+          sed -i '/<application/s/android:name/ android:usesCleartextTraffic="true" android:name/' $MANIFEST
+
+      - name: 3. اضافة مكتبات جوجل للتوقيع والفايربيز
+        script: |
+          # android/build.gradle
+          BUILD_GRADLE="android/build.gradle"
+          if ! grep -q "com.google.gms.google-services" $BUILD_GRADLE; then
+            sed -i '/dependencies {/a \
+                  classpath "com.google.gms:google-services:4.4.1"' $BUILD_GRADLE
+          fi
+          
+          # android/app/build.gradle
+          APP_GRADLE="android/app/build.gradle"
+          if ! grep -q "apply plugin: 'com.google.gms.google-services'" $APP_GRADLE; then
+            echo "apply plugin: 'com.google.gms.google-services'" >> $APP_GRADLE
+          fi
+
+      - name: 4. انشاء ملف google-services.json وهمي اذا ما موجود
+        script: |
+          GOOGLE_JSON="android/app/google-services.json"
+          if [ ! -f "$GOOGLE_JSON" ]; then
+            mkdir -p android/app
+            echo '{
+              "project_info": {
+                "project_number": "000000000000",
+                "project_id": "dummy-project",
+                "storage_bucket": "dummy-project.appspot.com"
+              },
+              "client": [
+                {
+                  "client_info": {
+                    "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+                    "android_client_info": {
+                      "package_name": "'$PACKAGE_NAME'"
+                    }
+                  },
+                  "api_key": [
+                    {
+                      "current_key": "AIzaSyDummyKeyForBuildOnly"
+                    }
+                  ]
+                }
+              ]
+            }' > $GOOGLE_JSON
+          fi
+
+      - name: 5. انشاء keystore للتوقيع
+        script: |
+          keytool -genkey -v -keystore android/app/keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload \
+            -dname "CN=Jude Adaiy, OU=Dev, O=ChatApp, L=Basra, S=Basra, C=IQ" \
+            -storepass android -keypass android
+          
+          echo "storePassword=android" > android/key.properties
+          echo "keyPassword=android" >> android/key.properties
+          echo "keyAlias=upload" >> android/key.properties
+          echo "storeFile=keystore.jks" >> android/key.properties
+
+      - name: 6. تفعيل التوقيع بـ app/build.gradle
+        script: |
+          APP_GRADLE="android/app/build.gradle"
+          # اضافة key.properties
+          if ! grep -q "key.properties" $APP_GRADLE; then
+            sed -i '/android {/i \
+          def keystoreProperties = new Properties()\
+          def keystorePropertiesFile = rootProject.file("key.properties")\
+          if (keystorePropertiesFile.exists()) {\
+              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\
+          }\
+          ' $APP_GRADLE
+          fi
+          
+          # تعديل signingConfigs
+          sed -i '/buildTypes {/i \
+             signingConfigs {\
+                 release {\
+                     keyAlias keystoreProperties["keyAlias"]\
+                     keyPassword keystoreProperties["keyPassword"]\
+                     storeFile keystoreProperties["storeFile"]? file(keystoreProperties["storeFile"]) : null\
+                     storePassword keystoreProperties["storePassword"]\
+                 }\
+             }\
+          ' $APP_GRADLE
+          
+          # تفعيل التوقيع للـ release
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
+
+      - name: 7. تحميل الباكجات
+        script: flutter pub get
+
+      - name: 8. توليد ايقونة التطبيق بكل المقاسات
+        script: flutter pub run flutter_launcher_icons
+
+      - name: 9. بناء APK موقع وجاهز
+        script: flutter build apk --release
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+
+    publishing:
+      email:
+        recipients:
+          - barqaday@gmail.com
