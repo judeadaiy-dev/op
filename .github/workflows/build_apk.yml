@@ -3,8 +3,8 @@ name: Build Flutter APK
 on:
   push:
     branches:
-      - main # أو اسم الفرع الرئيسي لديك إذا كان master
-  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً من موقع جيت هاب
+      - main # أو master حسب اسم الفرع الرئيسي في مستودعك الجديد
+  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً بضغطة زر من الموقع
 
 jobs:
   build:
@@ -26,22 +26,24 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0' # نسخة مستقرة ومتوافقة مع حزم مشروعك
+          flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      # 4. إعادة إنشاء مجلد الأندرويد والملفات الأساسية تلقائياً
+      # 4. توليد مجلد الأندرويد تلقائياً بربطه باسم الحزمة الصحيح المتوافق مع الـ pubspec
       - name: Recreate Android platform files
         run: |
-          flutter create . --platforms=android
+          flutter create . --platforms=android --project-name=chat_app
 
       # 5. جلب الحزم والمكتبات المذكورة في pubspec.yaml
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
 
       # 6. بناء نسخة الـ APK الاحترافية (Release)
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          flutter build apk --release --no-tree-shake-icons
 
       # 7. رفع الـ APK الناتج لتستطيع تحميله مباشرة إلى هاتفك
       - name: Upload APK Artifact
