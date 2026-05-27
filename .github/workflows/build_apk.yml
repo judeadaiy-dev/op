@@ -83,16 +83,18 @@ jobs:
           
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
-      # 5. ضبط إصدارات الـ SDK المطلوبة للأندرويد بشكل نظامي ودقيق
+      # 5. ضبط إعدادات الـ SDK بشكل نظامي قاطع عبر ملف الخصائص وملف الإعدادات الافتراضي لفلاتر
       - name: Patch Android build configuration
         run: |
-          # 1. حقن الإصدارات داخل ملف local.properties ليقرأها أندرويد تلقائياً
+          # حقن القيم بشكل مباشر داخل ملف الخصائص المحمي
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # 2. تعديل السطر المخصص للـ minSdkVersion داخل كتلة defaultConfig حصراً دون المساس بقسم فلاتر
-          sed -i '/defaultConfig {/,/}/s/minSdkVersion.*/minSdkVersion 23/' android/app/build.gradle
+          # إجبار الحزم وتطبيق الأندرويد على اعتماد القيمة 23 الصادرة من فلاتر وتخطي القيمة الافتراضية القديمة
+          APP_GRADLE="android/app/build.gradle"
+          sed -i 's/minSdkVersion .*/minSdkVersion 23/g' $APP_GRADLE 2>/dev/null || true
+          sed -i 's/minSdkVersion=.*/minSdkVersion=23/g' $APP_GRADLE 2>/dev/null || true
 
       # 6. أمر البناء الفعلي الموجه للأندرويد حصراً لتفادي مشاكل الحزم الأخرى
       - name: Build Signed APK
