@@ -84,12 +84,16 @@ jobs:
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
       # 5. ضبط إصدارات الـ SDK المطلوبة للأندرويد وحقن القيمة 23 نظامياً لمنع تعارض حزمة الصوت
+            # 5. ضبط إصدارات الـ SDK المطلوبة للأندرويد بشكل نظامي ودقيق
       - name: Patch Android build configuration
         run: |
+          # 1. حقن الإصدارات داخل ملف local.properties ليقرأها أندرويد تلقائياً
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
-          sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
+          
+          # 2. تعديل السطر المخصص للـ minSdkVersion داخل كتلة defaultConfig حصراً دون المساس بقسم فلاتر
+          sed -i '/defaultConfig {/,/}/s/minSdkVersion.*/minSdkVersion 23/' android/app/build.gradle
 
       # 6. أمر البناء الفعلي الموجه للأندرويد حصراً لتفادي مشاكل الحزم الأخرى
       - name: Build Signed APK
