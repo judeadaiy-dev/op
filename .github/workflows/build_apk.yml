@@ -1,4 +1,4 @@
-name: Build Flutter APK
+Name: Build Flutter APK
 
 on:
   push:
@@ -83,12 +83,14 @@ jobs:
           
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
-      # ضبط إصدارات الـ SDK المطلوبة للأندرويد
+      # ضبط إصدارات الـ SDK المطلوبة للأندرويد وحقن رقم 23 نظامياً في الـ build.gradle المولد
       - name: Patch Android build configuration
         run: |
           echo "flutter.compileSdkVersion=34" >> android/local.properties
-          echo "flutter.minSdkVersion=21" >> android/local.properties
+          echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
+          # التعديل البرمي الحاسم لتغيير القيمة داخل ملف إعدادات الأندرويد نفسه
+          sed -i 's/minSdkVersion.*/minSdkVersion 23/g' android/app/build.gradle
 
       # أمر البناء الفعلي الموجه للأندرويد حصراً لتفادي مشاكل الحزم الأخرى
       - name: Build Signed APK
