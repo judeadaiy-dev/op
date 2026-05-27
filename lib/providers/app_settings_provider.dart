@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppSettings {
-  // الأسماء الصحيحة اللي تطابق الشاشات
+  // المتغيرات الأساسية الموجودة عندك
   final String name;
-  final String logo;
+  final String logoUrl;
   final bool maintenanceMode;
   final String version;
   final String welcomeMessage;
@@ -12,20 +12,24 @@ class AppSettings {
 
   AppSettings({
     required this.name,
-    required this.logo,
+    required this.logoUrl,
     required this.maintenanceMode,
     required this.version,
     required this.welcomeMessage,
     required this.allowRegistration,
   });
 
+  // أضفنا هذين السطرين ليتوافق مع الشاشات اللي تطلب appName و appLogoUrl
+  String get appName => name;
+  String get appLogoUrl => logoUrl;
+
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     return AppSettings(
       name: json['name']?? 'SeaChat',
-      logo: json['logo']?? '',
+      logoUrl: json['logo_url']?? json['logo']?? '',
       maintenanceMode: json['maintenance_mode']?? false,
       version: json['version']?? '1.0.0',
-      welcomeMessage: json['welcome_message']?? 'مرحبا بك في التطبيق',
+      welcomeMessage: json['welcome_message']?? 'مرحبا بك في SeaChat',
       allowRegistration: json['allow_registration']?? true,
     );
   }
@@ -33,7 +37,7 @@ class AppSettings {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
-      'logo': logo,
+      'logo_url': logoUrl,
       'maintenance_mode': maintenanceMode,
       'version': version,
       'welcome_message': welcomeMessage,
@@ -44,29 +48,40 @@ class AppSettings {
 
 class AppSettingsProvider extends ChangeNotifier {
   final SupabaseClient supabase = Supabase.instance.client;
-  AppSettings? settings; // المتغير اسمه settings
+  AppSettings? settings;
   bool isLoading = false;
 
-  // الدالة اسمها loadSettings
   Future<void> loadSettings() async {
     try {
       isLoading = true;
       notifyListeners();
 
       final response = await supabase
-        .from('app_settings')
-        .select()
-        .limit(1)
-        .single();
+       .from('app_settings')
+       .select()
+       .limit(1)
+       .maybeSingle();
 
-      settings = AppSettings.fromJson(response);
+      if (response!= null) {
+        settings = AppSettings.fromJson(response);
+      } else {
+        // قيم افتراضية اذا ما لقى الجدول
+        settings = AppSettings(
+          name: 'SeaChat',
+          logoUrl: '',
+          maintenanceMode: false,
+          version: '1.0.0',
+          welcomeMessage: 'مرحبا بك في SeaChat',
+          allowRegistration: true,
+        );
+      }
+      
       isLoading = false;
       notifyListeners();
     } catch (e) {
-      // قيم افتراضية اذا ما لقى الجدول
       settings = AppSettings(
         name: 'SeaChat',
-        logo: '',
+        logoUrl: '',
         maintenanceMode: false,
         version: '1.0.0',
         welcomeMessage: 'مرحبا بك في SeaChat',
