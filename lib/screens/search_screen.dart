@@ -4,7 +4,7 @@ import '../providers/auth_provider.dart';
 import '../widgets/glass_container.dart';
 import '../theme/app_theme.dart';
 import '../utils/supabase_client.dart';
-
+import 'package:chat_app/theme/app_colors.dart';
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
