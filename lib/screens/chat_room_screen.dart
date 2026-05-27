@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:chat_app/widgets/glass_container.dart';
+import 'package:chat_app/theme/app_colors.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final String roomId;
@@ -15,6 +16,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   RealtimeChannel? _channel;
   List<Map<String, dynamic>> messages = [];
   bool isLoading = true;
+  final TextEditingController _messageController = TextEditingController();
 
   @override
   void initState() {
@@ -26,10 +28,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Future<void> _loadMessages() async {
     try {
       final response = await supabase
-         .from('messages')
-         .select()
-         .eq('room_id', widget.roomId)
-         .order('created_at', ascending: true);
+        .from('messages')
+        .select()
+        .eq('room_id', widget.roomId)
+        .order('created_at', ascending: true);
 
       setState(() {
         messages = List<Map<String, dynamic>>.from(response);
@@ -44,8 +46,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _channel = supabase.channel('room_${widget.roomId}');
 
     _channel!
-       .onPostgresChanges(
-          event: PostgresChangeEvent.all,
+      .onPostgresChanges(
+          // تم التعديل: PostgresChangeEventType.insert → PostgresChangeEvent.insert
+          event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'messages',
           filter: PostgresChangeFilter(
@@ -54,19 +57,42 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             value: widget.roomId,
           ),
           callback: (payload) {
-            if (payload.eventType == PostgresChangeEventType.insert) {
-              setState(() {
-                messages.add(payload.newRecord);
-              });
-            }
+            setState(() {
+              messages.add(payload.newRecord);
+            });
           },
         )
-       .subscribe();
+      .subscribe();
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      await supabase.from('messages').insert({
+        'room_id': widget.roomId,
+        'sender_id': userId,
+        'content': text,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      _messageController.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في الإرسال: $e')),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
     _channel?.unsubscribe();
+    _messageController.dispose();
     super.dispose();
   }
 
@@ -75,19 +101,83 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المحادثة'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.primaryForeground,
       ),
-      body: isLoading
-         ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final msg = messages[index];
-                return GlassContainer(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(msg['content']?? ''),
-                );
-              },
+      body: Column(
+        children: [
+          Expanded(
+            child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = messages[index];
+                      final isMe = msg['sender_id'] == supabase.auth.currentUser?.id;
+                      
+                      return Align(
+                        alignment: isMe? Alignment.centerRight : Alignment.centerLeft,
+                        child: GlassContainer(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          color: isMe? AppColors.primary : Colors.grey[300],
+                          opacity: isMe? 0.9 : 0.7,
+                          child: Text(
+                            msg['content']?? '',
+                            style: TextStyle(
+                              color: isMe? Colors.white : Colors.black87,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                ),
+              ],
             ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: InputDecoration(
+                      hintText: 'اكتب رسالة...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: AppColors.primary,
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _sendMessage,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
