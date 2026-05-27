@@ -2,31 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppSettings {
+  // الأسماء الصحيحة اللي تطابق الشاشات
+  final String name;
+  final String logo;
   final bool maintenanceMode;
-  final String appVersion;
+  final String version;
   final String welcomeMessage;
   final bool allowRegistration;
 
   AppSettings({
+    required this.name,
+    required this.logo,
     required this.maintenanceMode,
-    required this.appVersion,
+    required this.version,
     required this.welcomeMessage,
     required this.allowRegistration,
   });
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     return AppSettings(
+      name: json['name']?? 'SeaChat',
+      logo: json['logo']?? '',
       maintenanceMode: json['maintenance_mode']?? false,
-      appVersion: json['app_version']?? '1.0.0',
-      welcomeMessage: json['welcome_message']?? 'مرحبا بك',
+      version: json['version']?? '1.0.0',
+      welcomeMessage: json['welcome_message']?? 'مرحبا بك في التطبيق',
       allowRegistration: json['allow_registration']?? true,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'name': name,
+      'logo': logo,
       'maintenance_mode': maintenanceMode,
-      'app_version': appVersion,
+      'version': version,
       'welcome_message': welcomeMessage,
       'allow_registration': allowRegistration,
     };
@@ -35,10 +44,10 @@ class AppSettings {
 
 class AppSettingsProvider extends ChangeNotifier {
   final SupabaseClient supabase = Supabase.instance.client;
-  AppSettings? settings; // تم التأكد من الاسم settings
+  AppSettings? settings; // المتغير اسمه settings
   bool isLoading = false;
 
-  // الدالة loadSettings موجودة
+  // الدالة اسمها loadSettings
   Future<void> loadSettings() async {
     try {
       isLoading = true;
@@ -47,17 +56,20 @@ class AppSettingsProvider extends ChangeNotifier {
       final response = await supabase
         .from('app_settings')
         .select()
+        .limit(1)
         .single();
 
       settings = AppSettings.fromJson(response);
       isLoading = false;
       notifyListeners();
     } catch (e) {
-      // اذا ما لقى جدول، يستخدم القيم الافتراضية
+      // قيم افتراضية اذا ما لقى الجدول
       settings = AppSettings(
+        name: 'SeaChat',
+        logo: '',
         maintenanceMode: false,
-        appVersion: '1.0.0',
-        welcomeMessage: 'مرحبا بك في التطبيق',
+        version: '1.0.0',
+        welcomeMessage: 'مرحبا بك في SeaChat',
         allowRegistration: true,
       );
       isLoading = false;
