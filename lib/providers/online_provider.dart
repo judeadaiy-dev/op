@@ -2,71 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OnlineProvider extends ChangeNotifier {
-  final SupabaseClient supabase = Supabase.instance.client;
-  RealtimeChannel? _channel;
-  final Map<String, bool> _onlineUsers = {};
-
-  Map<String, bool> get onlineUsers => _onlineUsers;
+  final List<String> _onlineUsers = [];
+  List<String> get onlineUsers => _onlineUsers;
 
   bool isUserOnline(String userId) {
-    return _onlineUsers[userId]?? false;
+    return _onlineUsers.contains(userId);
   }
 
-  void initPresence() {
-    final currentUserId = supabase.auth.currentUser?.id;
-    if (currentUserId == null) return;
+  void listenToPresence(RealtimeChannel channel) {
+    channel.onRealtimeStatusChanged((status) {
+      // التسمية الصحيحة لحالة القناة في نسختك الحالية
+      if (status == RealtimeStatus.subscribed) {
+        debugPrint('Subscribed to presence successfully!');
+      }
+    });
 
-    _channel = supabase.channel('online_users');
-
-    _channel!
-     .onPresenceSync((payload) {
-          final newState = _channel!.presenceState();
-          _onlineUsers.clear();
-          
-          // تم التعديل: نستخدم rawPayload بدل payload
-          for (final presence in newState) {
-            final userId = presence.rawPayload['user_id'] as String?;
-            if (userId!= null) {
-              _onlineUsers[userId] = true;
-            }
+    channel.onPresenceSync((payload) {
+      _onlineUsers.clear();
+      // جلب البيانات الصحيحة المتوافقة مع نسختك الحالية
+      final states = channel.presenceState();
+      states.forEach((key, value) {
+        for (var presence in value) {
+          if (presence.rawPayload!= null && presence.rawPayload!['user_id']!= null) {
+            _onlineUsers.add(presence.rawPayload!['user_id'] as String);
+          } else if (presence.rawPayload!= null) {
+            // حل بديل إضافي لضمان جلب الآيدي تحت أي مسمى داخل الخريطة
+            final userId = presence.rawPayload!['id']?? presence.rawPayload!['userId'];
+            if (userId!= null) _onlineUsers.add(userId as String);
           }
-          notifyListeners();
-        })
-     .onPresenceJoin((payload) {
-          // تم التعديل: rawPayload بدل payload
-          final userId = payload.rawPayload['user_id'] as String?;
-          if (userId!= null) {
-            _onlineUsers[userId] = true;
-            notifyListeners();
-          }
-        })
-     .onPresenceLeave((payload) {
-          // تم التعديل: rawPayload بدل payload
-          final userId = payload.rawPayload['user_id'] as String?;
-          if (userId!= null) {
-            _onlineUsers[userId] = false;
-            notifyListeners();
-          }
-        })
-     .subscribe((status, error) async {
-          // تم التعديل: RealtimeChannelState.joined → RealtimeChannelStates.joined
-          if (status == RealtimeChannelStates.joined) {
-            await _channel!.track({
-              'user_id': currentUserId,
-              'online_at': DateTime.now().toIso8601String(),
-            });
-          }
-        });
+        }
+      });
+      notifyListeners();
+    }).subscribe();
   }
 
-  void disposePresence() {
-    _channel?.unsubscribe();
-    _channel = null;
+  void clearOnlineUsers() {
+    _onlineUsers.clear();
+    notifyListeners();
   }
 
   @override
   void dispose() {
-    disposePresence();
+    _onlineUsers.clear();
     super.dispose();
   }
 }
