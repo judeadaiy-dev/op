@@ -27,23 +27,30 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # خطوة ذكية: التأكد من تحويل أي استدعاء داخل ملفات الـ Dart إلى chat_app لمنع أخطاء المسارات
-      - name: Auto-Fix Package Imports to chat_app
+      # 1. تنظيف شامل وتصفير الروابط الملوثة
+      - name: Clean Workspace
         run: |
-          find lib/ -name "*.dart" -exec sed -i 's/package:dardashati\//package:chat_app\//g' {} +
-
-      # تنظيف كامل وحذف ملفات القفل القديمة إن وجدت لبدء بناء نظيف
-      - name: Hard Clean Workspace
-        run: |
-          rm -f pubspec.lock
           flutter pub cache clean --force
           flutter clean || true
+          rm -rf .dart_tool
+          rm -f .packages
 
-      # إعادة بناء منصة أندرويد بالاسم الموحد المطلوب تماماً
+      # 2. توليد ملفات أندرويد نقية بالاسم المتوافق chat_app
       - name: Recreate Android platform files
         run: |
           flutter create . --platforms=android --project-name=chat_app --org=com.judeadaiy
           flutter pub get
+
+      # 3. حل سحري لمشكلة المسارات (تحويل الاستدعاءات إلى نسبية وتصحيح الأحرف)
+      - name: Fix Case-Sensitive Imports and Paths
+        run: |
+          # تحويل الاستدعاءات التي تبدأ باسم الحزمة إلى استدعاءات نسبية لحل مشكلة فقدان الملفات سحابياً
+          find lib/ -name "*.dart" -exec sed -i 's/import '"'"'package:chat_app\//import '"'"'../g' {} +
+          find lib/ -name "*.dart" -exec sed -i 's/import "package:chat_app\//import "../g' {} +
+          
+          # تصحيح مسار الاستدعاء في main.dart تحديداً ليعود خطوة واحدة للخلف بدلاً من خطوتين إن لزم الأمر
+          sed -i 's/import '"'"'..\//import '"'"'.\//g' lib/main.dart || true
+          sed -i 's/import "..\//import ".\//g' lib/main.dart || true
 
       - name: Add Permissions
         run: |
@@ -53,15 +60,12 @@ jobs:
 
       - name: Setup Google Services
         run: |
-          # 1. تعريف البلاجن في settings.gradle الحديث
           SETTINGS_GRADLE="android/settings.gradle"
           sed -i '/plugins {/a \    id "com.google.gms.google-services" version "4.4.1" apply false' $SETTINGS_GRADLE
           
-          # 2. تطبيق البلاجن في build.gradle الخاص بالـ app
           APP_GRADLE="android/app/build.gradle"
           sed -i '/plugins {/a \    id "com.google.gms.google-services"' $APP_GRADLE
           
-          # 3. توليد الـ JSON القياسي مع اسم الحزمة المطابق com.judeadaiy.chat_app
           mkdir -p android/app
           echo '{
             "project_info": {
@@ -101,14 +105,10 @@ jobs:
           echo "flutter.minSdkVersion=21" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
 
-      - name: Force Fix Package Resolution
-        run: |
-          echo "chat_app:lib/" > .packages
-          dart fix --apply
-
+      # 4. بناء التطبيق مع توجيه صريح ومباشر لاستهداف الأندرويد فقط لمنع تداخل حزم المنصات الأخرى
       - name: Build Signed APK
         run: |
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
