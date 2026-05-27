@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_settings_provider.dart';
-import '../theme/app_theme.dart';
 import 'package:chat_app/theme/app_colors.dart';
+
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
@@ -30,7 +30,7 @@ class WelcomeScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Spacer(flex: 2),
-                
+
                 // الشعار
                 Hero(
                   tag: 'app_logo',
@@ -49,9 +49,9 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(35),
-                      child: settings.appLogoUrl.isNotEmpty
-                          ? Image.network(
-                              settings.appLogoUrl,
+                      child: settings?.appLogoUrl?.isNotEmpty?? false
+                         ? Image.network(
+                              settings?.appLogoUrl?? '',
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => _buildDefaultLogo(),
                             )
@@ -59,12 +59,12 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // اسم التطبيق
                 Text(
-                  settings.appName,
+                  settings?.appName?? 'Chat App',
                   style: const TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
@@ -73,9 +73,9 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // الوصف
                 Text(
                   'تواصل مع أصدقائك وشارك لحظاتك\nفي أي وقت وأي مكان',
@@ -87,9 +87,9 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const Spacer(flex: 3),
-                
+
                 // زر تسجيل الدخول
                 SizedBox(
                   width: double.infinity,
@@ -116,9 +116,9 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // زر إنشاء حساب
                 SizedBox(
                   width: double.infinity,
@@ -147,9 +147,9 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // شروط الاستخدام
                 Text(
                   'باستمرارك، أنت توافق على الشروط والأحكام',
@@ -160,7 +160,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const Spacer(),
               ],
             ),
