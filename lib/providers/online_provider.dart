@@ -4,34 +4,68 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class OnlineProvider extends ChangeNotifier {
   final List<String> _onlineUsers = [];
   List<String> get onlineUsers => _onlineUsers;
+  RealtimeChannel? _presenceChannel;
 
+  // 1. الدالة التي يطلبها ملف main.dart عند تشغيل التطبيق
+  void initPresence() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    // إنشاء القناة وتتبع حالة المستخدمين
+    _presenceChannel = Supabase.instance.client.channel('online_users');
+    
+    listenToPresence(_presenceChannel!);
+  }
+
+  // 2. الدالة الداخلية لإدارة الاستماع والـ Sync
   void listenToPresence(RealtimeChannel channel) {
-    channel.onRealtimeStatusChanged((status) {
-      // الاستخدام المتوافق والمثالي مع حزمتك
-      if (status == RealtimeStatus.subscribed) {
-        debugPrint('تم الاتصال بالـ Presence بنجاح');
-      }
-    });
-
-    channel.onPresenceSync((payload) {
-      _onlineUsers.clear();
-
-      // جلب الحالات بطريقة ديناميكية آمنة 100% لتفادي مشاكل المسميات الداخلية للـ Getters
-      final Map<String, List<dynamic>> states = channel.presenceState();
-
-      states.forEach((key, value) {
-        for (var item in value) {
-          if (item is Map && item['user_id']!= null) {
-            _onlineUsers.add(item['user_id'].toString());
-          } else if (item is Presence) {
-            // حل احتياطي في حال كان الكائن يمرر كـ Presence object
-            final userId = item.payload?['user_id']?? key;
-            _onlineUsers.add(userId.toString());
+    channel.on(
+      RealtimeListenTypes.presence,
+      ChannelFilter(event: 'sync'),
+      (payload, [ref]) {
+        _onlineUsers.clear();
+        
+        // الطريقة الصحيحة والمضمونة لقراءة الـ states في حزمتك الحالية دون التسبب في خطأ Type
+        final List<dynamic> states = channel.presenceState();
+        
+        for (var state in states) {
+          if (state is Map && state['user_id'] != null) {
+            _onlineUsers.add(state['user_id'].toString());
+          } else if (state.rawPayload != null && state.rawPayload['user_id'] != null) {
+            _onlineUsers.add(state.rawPayload['user_id'].toString());
           }
         }
-      });
+        notifyListeners();
+      },
+    );
 
-      notifyListeners();
-    }).subscribe();
+    channel.on(
+      RealtimeListenTypes.presence,
+      ChannelFilter(event: 'join'),
+      (payload, [ref]) {
+        debugPrint('مستخدم جديد دخل أونلاين');
+      },
+    );
+
+    channel.subscribe((status, [error]) {
+      if (status == 'SUBSCRIBED') {
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user != null) {
+          // تسجيل دخول المستخدم الحالي في الـ Presence
+          _presenceChannel?.track({'user_id': user.id});
+        }
+      }
+    });
+  }
+
+  // 3. الدالة التي تطلبها شاشة chat_list_screen.dart لفحص حالة المستخدم
+  bool isUserOnline(String userId) {
+    return _onlineUsers.contains(userId);
+  }
+
+  @override
+  void dispose() {
+    _presenceChannel?.unsubscribe();
+    super.dispose();
   }
 }
