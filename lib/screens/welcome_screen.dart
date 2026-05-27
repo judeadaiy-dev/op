@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_settings_provider.dart';
 import '../theme/app_theme.dart';
-
+import 'package:chat_app/theme/app_colors.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
