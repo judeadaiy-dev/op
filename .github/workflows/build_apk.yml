@@ -38,18 +38,18 @@ jobs:
           sed -i '/<\/manifest>/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>' $MANIFEST
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' $MANIFEST
 
-      # 6. حقن إعدادات Google Services وبلاجن الفايربيز بطريقة لينوكس الآمنة
+      # 6. إعداد الجوجل بالطريقة الحديثة المتوافقة مع هياكل الجرادل الجديدة (Plugins Block)
       - name: Setup Google Services
         run: |
-          # أولاً: إضافة الـ classpath في ملف android/build.gradle الرئيسي داخل الـ dependencies
-          BUILD_GRADLE="android/build.gradle"
-          sed -i '/dependencies {/a \        classpath "com.google.gms:google-services:4.4.1"' $BUILD_GRADLE
+          # أولاً: إضافة تعريف البلاجن في ملف android/settings.gradle السحابي (النظام الحديث لفلاتر)
+          SETTINGS_GRADLE="android/settings.gradle"
+          sed -i '/plugins {/a \    id "com.google.gms.google-services" version "4.4.1" apply false' $SETTINGS_GRADLE
           
-          # ثانياً: تطبيق البلاجن في ملف android/app/build.gradle التابع للتطبيق في آخر سطر
+          # ثانياً: تطبيق البلاجن في ملف أندرويد الفرعي للتطبيق داخل بلوك الـ plugins الحديث
           APP_GRADLE="android/app/build.gradle"
-          echo 'apply plugin: "com.google.gms.google-services"' >> $APP_GRADLE
+          sed -i '/plugins {/a \    id "com.google.gms.google-services"' $APP_GRADLE
           
-          # ثالثاً: إنشاء ملف google-services.json الافتراضي لمنع توقف المحرك
+          # ثالثاً: إنشاء ملف google-services.json لمنع توقف المحرك أثناء الفحص التلقائي
           mkdir -p android/app
           echo '{
             "project_info": {
@@ -65,7 +65,6 @@ jobs:
             }]
           }' > android/app/google-services.json
 
-      # 7. توليد مفتاح التوقيع وتجهيز إعدادات الـ Release
       - name: Create Keystore and Sign App
         run: |
           keytool -genkey -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload \
@@ -79,13 +78,10 @@ jobs:
           
           APP_GRADLE="android/app/build.gradle"
           
-          # حقن قراءة ملف التوقيع في أعلى الـ android block لضمان عدم وجود أخطاء في الـ Gradle
           sed -i '/android {/i \def keystoreProperties = new Properties()\ndef keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\n    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n}\n' $APP_GRADLE
           
-          # حقن كود الـ signingConfigs
           sed -i '/buildTypes {/i \    signingConfigs {\n        release {\n            keyAlias keystoreProperties["keyAlias"]\n            keyPassword keystoreProperties["keyPassword"]\n            storeFile file(keystoreProperties["storeFile"])\n            storePassword keystoreProperties["storePassword"]\n        }\n    }\n' $APP_GRADLE
           
-          # استبدال التوقيع التلقائي بالـ release الجديد
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
       - name: Patch Android build configuration
@@ -108,3 +104,4 @@ jobs:
         with:
           name: SeaChat-Release-Signed-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+
