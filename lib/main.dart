@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+// المجلدات الفعلية داخل providers المتواجدة بمستودعك
 import 'providers/app_settings_provider.dart';
-import 'providers/chat_provider.dart';
-import 'screens/auth_screen.dart';
-import 'screens/reset_password_screen.dart';
-import 'screens/private_chat_screen.dart';
-import 'screens/rooms_screen.dart';
-import 'screens/edit_room_screen.dart';
-import 'screens/room_members_screen.dart';
-import 'screens/friends_screen.dart';
-import 'screens/user_dashboard_screen.dart';
-import 'screens/privacy_screen.dart';
-import 'screens/user_profile_screen.dart';
-import 'screens/admin_settings_screen.dart';
-import 'screens/not_found_screen.dart';
+import 'providers/auth_provider.dart';
+import 'providers/online_provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/unread_provider.dart';
+
+// الشاشات الفعلية داخل screens المتواجدة بمستودعك
+import 'screens/admin_screen.dart';
+import 'screens/chat_list_screen.dart';
+import 'screens/chat_room_screen.dart';
+import 'screens/index_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/search_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/welcome_screen.dart';
+
+// المجلد الداخلي للشاشات screens/auth المتواجد بمستودعك
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/signup_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
