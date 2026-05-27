@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:chat_app/providers/chat_provider.dart';
 import 'package:chat_app/widgets/glass_container.dart';
 import 'package:chat_app/widgets/room_tile.dart';
-
+import 'package:chat_app/theme/app_colors.dart';
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
