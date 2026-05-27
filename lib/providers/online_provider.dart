@@ -19,38 +19,38 @@ class OnlineProvider extends ChangeNotifier {
     _channel = supabase.channel('online_users');
 
     _channel!
-      .onPresenceSync((payload) {
+     .onPresenceSync((payload) {
           final newState = _channel!.presenceState();
           _onlineUsers.clear();
           
-          // تم التعديل: presenceData → payload
+          // تم التعديل: نستخدم rawPayload بدل payload
           for (final presence in newState) {
-            final userId = presence.payload['user_id'] as String?;
+            final userId = presence.rawPayload['user_id'] as String?;
             if (userId!= null) {
               _onlineUsers[userId] = true;
             }
           }
           notifyListeners();
         })
-      .onPresenceJoin((payload) {
-          // تم التعديل: presenceData → payload
-          final userId = payload.payload['user_id'] as String?;
+     .onPresenceJoin((payload) {
+          // تم التعديل: rawPayload بدل payload
+          final userId = payload.rawPayload['user_id'] as String?;
           if (userId!= null) {
             _onlineUsers[userId] = true;
             notifyListeners();
           }
         })
-      .onPresenceLeave((payload) {
-          // تم التعديل: presenceData → payload
-          final userId = payload.payload['user_id'] as String?;
+     .onPresenceLeave((payload) {
+          // تم التعديل: rawPayload بدل payload
+          final userId = payload.rawPayload['user_id'] as String?;
           if (userId!= null) {
             _onlineUsers[userId] = false;
             notifyListeners();
           }
         })
-      .subscribe((status, error) async {
-          // تم التعديل: RealtimeChannelStates → RealtimeChannelState
-          if (status == RealtimeChannelState.joined) {
+     .subscribe((status, error) async {
+          // تم التعديل: RealtimeChannelState.joined → RealtimeChannelStates.joined
+          if (status == RealtimeChannelStates.joined) {
             await _channel!.track({
               'user_id': currentUserId,
               'online_at': DateTime.now().toIso8601String(),
