@@ -6,59 +6,51 @@ class OnlineProvider extends ChangeNotifier {
   List<String> get onlineUsers => _onlineUsers;
   RealtimeChannel? _presenceChannel;
 
-  // 1. الدالة التي يطلبها ملف main.dart عند تشغيل التطبيق
+  // 1. الدالة التي يستدعيها ملف main.dart
   void initPresence() {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    // إنشاء القناة وتتبع حالة المستخدمين
+    // إنشاء القناة
     _presenceChannel = Supabase.instance.client.channel('online_users');
     
     listenToPresence(_presenceChannel!);
   }
 
-  // 2. الدالة الداخلية لإدارة الاستماع والـ Sync
+  // 2. دالة المتابعة والمزامنة بالطريقة الصحيحة لحزمة فلاتر
   void listenToPresence(RealtimeChannel channel) {
-    channel.on(
-      RealtimeListenTypes.presence,
-      ChannelFilter(event: 'sync'),
-      (payload, [ref]) {
+    channel.onPresence(
+      // تحديد نوع الحدث (المزامنة)
+      RealtimePresenceConfig(event: 'sync'),
+      (payload) {
         _onlineUsers.clear();
         
-        // الطريقة الصحيحة والمضمونة لقراءة الـ states في حزمتك الحالية دون التسبب في خطأ Type
+        // قراءة الـ states بطريقة مباشرة ومتوافقة مع نوع البيانات
         final List<dynamic> states = channel.presenceState();
         
         for (var state in states) {
-          if (state is Map && state['user_id'] != null) {
+          if (state is SinglePresenceState) {
+            // جلب الأيدي إذا كان كائن جاهز
+            final userId = state.rawPayload?['user_id'];
+            if (userId != null) _onlineUsers.add(userId.toString());
+          } else if (state is Map && state['user_id'] != null) {
             _onlineUsers.add(state['user_id'].toString());
-          } else if (state.rawPayload != null && state.rawPayload['user_id'] != null) {
-            _onlineUsers.add(state.rawPayload['user_id'].toString());
           }
         }
         notifyListeners();
       },
-    );
-
-    channel.on(
-      RealtimeListenTypes.presence,
-      ChannelFilter(event: 'join'),
-      (payload, [ref]) {
-        debugPrint('مستخدم جديد دخل أونلاين');
-      },
-    );
-
-    channel.subscribe((status, [error]) {
-      if (status == 'SUBSCRIBED') {
+    ).subscribe((status, [error]) {
+      // التحقق من نجاح الاشتراك بالقناة لتتبع المستخدم الحالي
+      if (status == RealtimeStatus.subscribed) {
         final user = Supabase.instance.client.auth.currentUser;
         if (user != null) {
-          // تسجيل دخول المستخدم الحالي في الـ Presence
           _presenceChannel?.track({'user_id': user.id});
         }
       }
     });
   }
 
-  // 3. الدالة التي تطلبها شاشة chat_list_screen.dart لفحص حالة المستخدم
+  // 3. الدالة التي تطلبها شاشة الدردشات chat_list_screen.dart
   bool isUserOnline(String userId) {
     return _onlineUsers.contains(userId);
   }
