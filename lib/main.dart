@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:chat_app/providers/app_settings_provider.dart';
-import 'package:chat_app/providers/chat_provider.dart';
-import 'package:chat_app/screens/auth_screen.dart';
-import 'package:chat_app/screens/reset_password_screen.dart';
-import 'package:chat_app/screens/private_chat_screen.dart';
-import 'package:chat_app/screens/rooms_screen.dart';
-import 'package:chat_app/screens/edit_room_screen.dart';
-import 'package:chat_app/screens/room_members_screen.dart';
-import 'package:chat_app/screens/friends_screen.dart';
-import 'package:chat_app/screens/user_dashboard_screen.dart';
-import 'package:chat_app/screens/privacy_screen.dart';
-import 'package:chat_app/screens/user_profile_screen.dart';
-import 'package:chat_app/screens/admin_settings_screen.dart';
-import 'package:chat_app/screens/not_found_screen.dart';
+import 'providers/app_settings_provider.dart';
+import 'providers/chat_provider.dart';
+import 'screens/auth_screen.dart';
+import 'screens/reset_password_screen.dart';
+import 'screens/private_chat_screen.dart';
+import 'screens/rooms_screen.dart';
+import 'screens/edit_room_screen.dart';
+import 'screens/room_members_screen.dart';
+import 'screens/friends_screen.dart';
+import 'screens/user_dashboard_screen.dart';
+import 'screens/privacy_screen.dart';
+import 'screens/user_profile_screen.dart';
+import 'screens/admin_settings_screen.dart';
+import 'screens/not_found_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
