@@ -27,30 +27,11 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 1. تنظيف شامل وتصفير الروابط الملوثة
-      - name: Clean Workspace
-        run: |
-          flutter pub cache clean --force
-          flutter clean || true
-          rm -rf .dart_tool
-          rm -f .packages
-
-      # 2. توليد ملفات أندرويد نقية بالاسم المتوافق chat_app
+      # إنشاء ملفات المنصة القياسية النظيفة دون المساس بأكوادك
       - name: Recreate Android platform files
         run: |
           flutter create . --platforms=android --project-name=chat_app --org=com.judeadaiy
           flutter pub get
-
-      # 3. حل سحري لمشكلة المسارات (تحويل الاستدعاءات إلى نسبية وتصحيح الأحرف)
-      - name: Fix Case-Sensitive Imports and Paths
-        run: |
-          # تحويل الاستدعاءات التي تبدأ باسم الحزمة إلى استدعاءات نسبية لحل مشكلة فقدان الملفات سحابياً
-          find lib/ -name "*.dart" -exec sed -i 's/import '"'"'package:chat_app\//import '"'"'../g' {} +
-          find lib/ -name "*.dart" -exec sed -i 's/import "package:chat_app\//import "../g' {} +
-          
-          # تصحيح مسار الاستدعاء في main.dart تحديداً ليعود خطوة واحدة للخلف بدلاً من خطوتين إن لزم الأمر
-          sed -i 's/import '"'"'..\//import '"'"'.\//g' lib/main.dart || true
-          sed -i 's/import "..\//import ".\//g' lib/main.dart || true
 
       - name: Add Permissions
         run: |
@@ -105,14 +86,12 @@ jobs:
           echo "flutter.minSdkVersion=21" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
 
-      # 4. بناء التطبيق مع توجيه صريح ومباشر لاستهداف الأندرويد فقط لمنع تداخل حزم المنصات الأخرى
       - name: Build Signed APK
         run: |
-          flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SeaChat-Release-Signed-APK
           path: build/app/outputs/flutter-apk/app-release.apk
-
