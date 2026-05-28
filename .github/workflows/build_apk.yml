@@ -83,17 +83,20 @@ jobs:
           
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
-      # 5. فكرتك العبقرية: جعل السيرفر يكتب ملف الخصائص يدوياً ويحقنه في ملف البناء مباشرة
+      # 5. الإصلاح الذكي والجذري لتغيير الـ minSdkVersion بدون إفساد كتل فلاتر
       - name: Generate Manual Configuration on Server
         run: |
-          # كتابة ملف الخصائص بشكل مباشر داخل المجلد المولد
+          # كتابة ملف الخصائص القياسي في مكانه الصحيح
           echo "flutter.compileSdkVersion=34" > android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # تعديل ملف build.gradle ليقرأ القيمة 23 الصريحة في الـ defaultConfig دون أي وسيط ديناميكي
           APP_GRADLE="android/app/build.gradle"
-          sed -i 's/minSdkVersion.*/minSdkVersion 23/g' $APP_GRADLE
+          # تعديل السطر داخل الـ defaultConfig فقط (الذي لا يحتوي على علامة =)
+          sed -i '/defaultConfig {/,/}/s/minSdkVersion.*/minSdkVersion 23/' $APP_GRADLE
+          
+          # تعديل السطر العلوي في كتلة flutter (الذي يحتوي على علامة =) ليكون متوافقاً مع الهيكلية
+          sed -i 's/minSdkVersion = .*/minSdkVersion = 23/g' $APP_GRADLE 2>/dev/null || true
 
       # 6. أمر البناء الفعلي الموجه للأندرويد
       - name: Build Signed APK
@@ -106,3 +109,4 @@ jobs:
         with:
           name: SeaChat-Release-Signed-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+
