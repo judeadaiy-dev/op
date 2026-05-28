@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. حقن مسار الـ SDK فقط داخل ملف الخصائص (لأن الإعدادات الباقية بملفاتك جاهزة)
+      # 3. حقن مسار الـ SDK داخل ملف الخصائص
       - name: Configure SDK Path
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
@@ -42,7 +42,7 @@ jobs:
           flutter config --no-analytics
           flutter pub get
 
-      # 5. البناء المباشر للمشروع بالاعتماد على ملفات الأندرويد التي جهزتها أنت
+      # 5. البناء المباشر المستقر
       - name: Build APK Release
         run: |
           flutter build apk --release \
