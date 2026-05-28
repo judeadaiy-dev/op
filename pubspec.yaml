@@ -14,14 +14,13 @@ dependencies:
 
   # State Management
   provider: ^6.1.2
-
   # Backend
   supabase_flutter: ^2.12.4
   
-  # Firebase - للإشعارات Push Notifications
-  firebase_core: ^4.9.0
-  firebase_messaging: ^15.3.0
-  flutter_local_notifications: ^18.0.0
+  # Firebase - مصفوفة الإصدار المتوافق تلقائياً مع فلاتر 3.22
+  firebase_core: any
+  firebase_messaging: any
+  flutter_local_notifications: any
 
   # UI & Theme
   google_fonts: ^6.2.1
