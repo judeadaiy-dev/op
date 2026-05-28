@@ -83,17 +83,17 @@ jobs:
           
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
-      # 5. الإصلاح الهندسي والدقيق للـ minSdkVersion بدون لمس الـ compileSdk
+      # 5. الحقن القاطع للـ minSdkVersion تحت رأس الـ defaultConfig مباشرة
       - name: Force minSdkVersion 23 via Android properties
         run: |
-          # 1. تثبيت الخصائص في ملف local.properties ليتم قراءتها برمجياً وبشكل تلقائي
+          # 1. تثبيت الخصائص الاحتياطية في ملف local.properties
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # 2. استبدال كلمة minSdkVersion فقط عندما تكون داخل كتلة الـ defaultConfig حصراً لحماية الكتل العلوية
+          # 2. حقن سطر صريح وقطعي لـ minSdkVersion 23 بعد فتح قوس الـ defaultConfig مباشرة
           APP_GRADLE="android/app/build.gradle"
-          sed -i '/defaultConfig {/,/}/s/minSdkVersion.*/minSdkVersion 23/' $APP_GRADLE
+          sed -i '/defaultConfig {/a \        minSdkVersion 23' $APP_GRADLE
 
       # 6. أمر البناء الفعلي الموجه للأندرويد
       - name: Build Signed APK
