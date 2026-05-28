@@ -1,4 +1,4 @@
-name: Pure Android Directory Build
+name: Fixed Ultimate Flutter Build
 
 on:
   push:
@@ -33,21 +33,118 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. مسح المجلد القديم وتوليد هيكل أندرويد حديث ونظيف كلياً
-      - name: Recreate Clean Android Structure
+      # 4. مسح الهيكل المكسور وتوليد بنية أساسية
+      - name: Recreate Base Android Structure
         run: |
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. تأمين قيم الـ SDK المطلوبة في ملف الخصائص بالسيرفر لتقرأها الحزم تلقائياً
-      - name: Configure Flutter SDK Path
+      # 5. السحر الهندسي: حقن ملفات التوافقية الشاملة لإرضاء المكتبات الخارجية
+      - name: Inject Compatibility Layer
         run: |
+          # أ. ضبط ملف الخصائص الأساسي
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
+          
+          # ب. إعادة كتابة settings.gradle لدعم استدعاء الحزم التلقائي (الـ Plugins) بنظام مستقر
+          cat << 'EOF' > android/settings.gradle
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  def file = new File(settingsDir, "local.properties")
+                  if (file.exists()) {
+                      properties.load(file.newDataInputStream())
+                  }
+                  def sdkPath = properties.getProperty("flutter.sdk")
+                  assert sdkPath != null, "flutter.sdk not set in local.properties"
+                  return sdkPath
+              }()
 
-      # 6. أمر البناء الشامل والنظيف (بدون تشغيل الترقية اليدوية للجرادل التي كسرت البناء)
+              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          plugins {
+              id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+              id "com.android.application" version "7.3.0" apply false
+              id "org.jetbrains.kotlin.android" version "1.8.22" apply false
+          }
+
+          include ":app"
+          EOF
+
+          # ج. فرض الـ compileSdkVersion والخصائص مباشرة داخل ملف app/build.gradle لإنهاء خطأ connectivity_plus
+          cat << 'EOF' > android/app/build.gradle
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file('local.properties')
+          if (localPropertiesFile.exists()) {
+              localPropertiesFile.withReader('UTF-8') { reader ->
+                  localProperties.load(reader)
+              }
+          }
+
+          def flutterRoot = localProperties.getProperty('flutter.sdk')
+          if (flutterRoot == null) {
+              throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+          }
+
+          plugins {
+              id "com.android.application"
+              id "org.jetbrains.kotlin.android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          android {
+              namespace "com.judeadaiy.chat_app"
+              compileSdkVersion 34
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+
+              defaultConfig {
+                  applicationId "com.judeadaiy.chat_app"
+                  minSdkVersion 23
+                  targetSdkVersion 34
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+          }
+
+          // حلقة التوافقية الذكية لتمرير قيم الـ SDK للجافا والكوتلن لكل المكاتب الخارجية غصباً عنها
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      project.android {
+                          compileSdkVersion 34
+                          buildToolsVersion "34.0.0"
+                          defaultConfig {
+                              minSdkVersion 23
+                          }
+                      }
+                  }
+              }
+              project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                  kotlinOptions {
+                      jvmTarget = "17"
+                  }
+              }
+          }
+          EOF
+
+      # 6. أمر البناء الصريح والمباشر
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
