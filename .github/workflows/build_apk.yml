@@ -1,4 +1,4 @@
-name: Ultimate Native Flutter Build
+name: Pure Native Flutter Build
 
 on:
   push:
@@ -14,14 +14,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تهيئة بيئة الجافا الحديثة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. تهيئة محرك فلاتر المستقر
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -29,46 +27,21 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. جلب الحزم والمكتبات
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. توليد مجلد أندرويد أصلي ونظيف تماماً من المحرك مباشرة لضمان ربط الـ Embedding
-      - name: Recreate Clean Native Android Project
+      # هنا نعتمد على مجلد الأندرويد الأصلي الخاص بك، وفقط نغذي ملف الخصائص الرسمي بالقيم المطلوبة
+      - name: Configure Android SDK via Local Properties
         run: |
-          rm -rf android
-          flutter create . --platforms=android --org=com.judeadaiy
-
-      # 5. التعديل الذكي والتوافقية الصارمة بدون تضارب الـ afterEvaluate
-      - name: Configure SDK and Fix Dependencies
-        run: |
-          # أ. ضبط ملف local.properties ومسارات الـ SDK
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
-          
-          # ب. حقن تعديل الـ SDK الذكي للمكتبات الخارجية فور تحميل المكونات لمنع خطأ مكتبة الصوت والاتصال
-          cat << 'EOF' >> android/build.gradle
 
-          subprojects {
-              project.plugins.withType(com.android.build.gradle.BasePlugin.class) {
-                  project.android {
-                      compileSdkVersion 34
-                      defaultConfig {
-                          minSdkVersion 23
-                      }
-                  }
-              }
-          }
-          EOF
-
-      # 6. تشغيل البناء القياسي المستقر
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 7. رفع ملف الـ APK النهائي للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
