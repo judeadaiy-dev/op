@@ -35,7 +35,42 @@ jobs:
           flutter config --no-analytics
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 4. حقن مسار الـ SDK والإصدارات في ملف الخصائص
+      # 4. إعادة كتابة ملف settings.gradle بالصيغة القياسية الحديثة لمنع أخطاء الـ PluginManagement
+      - name: Rewrite and Fix Settings Gradle
+        run: |
+          mkdir -p android
+          cat << 'EOF' > android/settings.gradle
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  def file = new File(settingsDir, "local.properties")
+                  if (file.exists()) {
+                      file.withReader("UTF-8") { reader -> properties.load(reader) }
+                  }
+                  def sdkPath = properties.getProperty("flutter.sdk")
+                  assert sdkPath != null, "flutter.sdk not set in local.properties"
+                  return sdkPath
+              }()
+
+              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          plugins {
+              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+              id "com.android.application" version "8.2.0" apply false
+              id "org.jetbrains.kotlin.android" version "1.8.22" apply false
+          }
+
+          include ":app"
+          EOF
+
+      # 5. حقن مسار الـ SDK والإصدارات في ملف الخصائص
       - name: Configure SDK and Gradle Properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
@@ -48,14 +83,14 @@ jobs:
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
 
-      # 5. ترقية الـ Wrapper ليتوافق مع نظام الأندرويد الحديث وجافا 17
+      # 6. ترقية الـ Wrapper ليتوافق مع نظام الأندرويد الحديث وجافا 17
       - name: Upgrade Gradle Wrapper Version
         run: |
           if [ -f android/gradle/wrapper/gradle-wrapper.properties ]; then
             sed -i 's/gradle-.*-bin.zip/gradle-8.2-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
           fi
 
-      # 6. تحديث ملف الجرادل للتطبيق لفرض جافا 17 الموحدة وحل تعارض الـ JVM
+      # 7. تحديث ملف الجرادل للتطبيق لفرض جافا 17 الموحدة وحل تعارض الـ JVM
       - name: Patch Application Gradle for Java 17 Compatibility
         run: |
           if [ -f android/app/build.gradle ]; then
@@ -86,15 +121,15 @@ jobs:
           EOF
           fi
 
-      # 7. تحميل حزم الاعتماديات (Dependencies) الخاصة بفلاتر
+      # 8. تحميل حزم الاعتماديات (Dependencies) الخاصة بفلاتر
       - name: Install Dependencies
         run: flutter pub get
 
-      # 8. البناء الفعلي لملف الـ APK بصيغة الـ Release
+      # 9. البناء الفعلي لملف الـ APK بصيغة الـ Release
       - name: Build APK
         run: flutter build apk --release
 
-      # 9. رفع ملف الـ APK الناتج لتتمكن من تحميله مباشرة من صفحة الـ Actions
+      # 10. رفع ملف الـ APK الناتج لتتمكن من تحميله مباشرة من صفحة الـ Actions
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
