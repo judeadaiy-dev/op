@@ -1,4 +1,4 @@
-name: Fixed Ultimate Flutter Build
+name: Ultimate Pure Java Flutter Build
 
 on:
   push:
@@ -14,14 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تهيئة بيئة الجافا الحديثة
+      # 1. تهيئة بيئة الجافا الحديثة والمستقرة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. تهيئة محرك فلاتر المستقر
+      # 2. تهيئة محرك فلاتر المستقر المتوافق مع الـ SDK الخاص بك
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -29,26 +29,26 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. جلب الحزم والمكتبات
+      # 3. جلب الحزم والمكتبات المذكورة في pubspec.yaml
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. مسح الهيكل المكسور وتوليد بنية أساسية نظيفة
-      - name: Recreate Base Android Structure
+      # 4. التوليد الذكي: بناء هيكل أندرويد يعتمد على الجافا وحزمتك الرسمية لمنع أخطاء الكوتلن
+      - name: Recreate Base Android Structure with Java
         run: |
           rm -rf android
-          flutter create . --platforms=android --org=com.judeadaiy
+          flutter create . --platforms=android --org=com.judeadaiy --android-language java
 
-      # 5. السحر الهندسي: حقن ملفات التوافقية الشاملة بالترتيب الصحيح مع إصلاح ملف الكوتلن
+      # 5. الهندسة الذكية: حقن التوافقية الشاملة لإنهاء أخطاء المكاتب الخارجية (صوت، اتصال، إلخ)
       - name: Inject Compatibility Layer
         run: |
-          # أ. ضبط ملف الخصائص الأساسي
+          # أ. ضبط ملف الخصائص الأساسي ومسارات الـ SDK
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # ب. كتابة ملف settings.gradle الرئيسي والمستقر لقراءة الـ Plugins
+          # ب. كتابة ملف settings.gradle ليتوافق مع فلاتر 3.22 والمكتبات القديمة معاً
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -74,17 +74,15 @@ jobs:
           plugins {
               id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
               id "com.android.application" version "7.3.0" apply false
-              id "org.jetbrains.kotlin.android" version "1.8.22" apply false
           }
 
           include ":app"
           EOF
 
-          # ج. إعادة كتابة ملف app/build.gradle ليكون نظامياً 100%
+          # ج. كتابة ملف app/build.gradle لفرض الحزمة الصريحة com.judeadaiy.chat_app والجافا 17
           cat << 'EOF' > android/app/build.gradle
           plugins {
               id "com.android.application"
-              id "org.jetbrains.kotlin.android"
               id "dev.flutter.flutter-gradle-plugin"
           }
 
@@ -110,10 +108,6 @@ jobs:
                   targetCompatibility JavaVersion.VERSION_17
               }
 
-              kotlinOptions {
-                  jvmTarget = '17'
-              }
-
               defaultConfig {
                   applicationId "com.judeadaiy.chat_app"
                   minSdkVersion 23
@@ -123,6 +117,7 @@ jobs:
               }
           }
 
+          // إجبار كل المكاتب الخارجية (مثل record و connectivity_plus) على استخدام نفس التوافقية
           subprojects {
               afterEvaluate { project ->
                   if (project.hasProperty('android')) {
@@ -135,26 +130,22 @@ jobs:
                       }
                   }
               }
-              project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                  kotlinOptions {
-                      jvmTarget = "17"
-                  }
-              }
           }
           EOF
 
-          # د. إصلاح وحقن ملف MainActivity.kt لإنهاء مشكلة التوجيه وUnresolved reference نهائياً
-          mkdir -p android/app/src/main/kotlin/com/judeadaiy/op
-          cat << 'EOF' > android/app/src/main/kotlin/com/judeadaiy/op/MainActivity.kt
-          package com.judeadaiy.op
+          # د. مسح أي أثر للكوتلن وحقن ملف MainActivity.java النظيف والمطابق للحزمة الرسمية
+          rm -rf android/app/src/main/kotlin
+          mkdir -p android/app/src/main/java/com/judeadaiy/chat_app
+          cat << 'EOF' > android/app/src/main/java/com/judeadaiy/chat_app/MainActivity.java
+          package com.judeadaiy.chat_app;
 
-          import io.flutter.embedding.android.FlutterActivity
+          import io.flutter.embedding.android.FlutterActivity;
 
-          class MainActivity: FlutterActivity() {
+          public class MainActivity extends FlutterActivity {
           }
           EOF
 
-      # 6. أمر البناء القياسي المباشر
+      # 6. أمر البناء الصريح والنظيف الموجه للملف الحالي
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
@@ -163,5 +154,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: App-Release-APK
+          name: App-ChatApp-Release
           path: build/app/outputs/flutter-apk/app-release.apk
