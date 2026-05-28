@@ -29,16 +29,19 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. الاعتماد على المجلد الحالي وتوليد الملفات الناقصة فقط دون حذف ملفاتك
+      # 3. تهيئة وإكمال ملفات أندرويد الناقصة والتنظيف الفوري
       - name: Integrate and Complete Android Structure
         run: |
           flutter config --no-analytics
           flutter create . --platforms=android --org=com.judeadaiy
+          flutter clean
 
-      # 4. إعادة كتابة ملف settings.gradle بالصيغة القياسية الحديثة لمنع أخطاء الـ PluginManagement
-      - name: Rewrite and Fix Settings Gradle
+      # 4. زرع ملف settings.gradle في المجلد الرئيسي وفي مجلد android لمنع تعارض مكاتب فلاتر
+      - name: Rewrite and Fix Settings Gradle (Root & Android)
         run: |
           mkdir -p android
+          
+          # كود الإعدادات القياسي الحديث
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -69,6 +72,9 @@ jobs:
 
           include ":app"
           EOF
+          
+          # نسخ نفس الملف للجذر (Root) لحل مشكلة الإضافة المباشرة الفاشلة
+          cp android/settings.gradle ./settings.gradle
 
       # 5. حقن مسار الـ SDK والإصدارات في ملف الخصائص
       - name: Configure SDK and Gradle Properties
@@ -82,6 +88,9 @@ jobs:
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
+          
+          # نسخ الـ local.properties للجذر أيضاً احتياطاً
+          cp android/local.properties ./local.properties
 
       # 6. ترقية الـ Wrapper ليتوافق مع نظام الأندرويد الحديث وجافا 17
       - name: Upgrade Gradle Wrapper Version
