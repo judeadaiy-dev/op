@@ -22,7 +22,7 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      # 2. تثبيت محرك فلاتر المستقر بالإصدار 3.22.0
+      # 2. تثبيت محرك فلاتر بالإصدار المستقر 3.22.0
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -30,42 +30,51 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. جلب المكاتب المتوافقة تلقائياً وحل التعارضات
-      - name: Install Dependencies
+      # 3. إجبار فلاتر على توليد هيكل أندرويد حديث بالكامل (v2 Embedding تلقائياً)
+      - name: Auto-Generate Clean Android Structure
         run: |
           flutter config --no-analytics
-          flutter pub get
+          # توليد المجلد والملفات الأساسية المفقودة بأحدث قالب مدعوم
+          flutter create . --platforms=android --org=com.judeadaiy
 
-      # 4. تهيئة الخصائص الذكية لأندرويد وحقن قيم الـ SDK المتوافقة
-      - name: Inject SDK Paths & Android Properties
+      # 4. نسخ ملف الإعداد الخاص بك ليحل محل الملف الافتراضي وحقن قيم الـ SDK
+      - name: Apply User Gradle Configuration
         run: |
-          mkdir -p android
+          # التأكد من وجود المجلدات المستهدفة
+          mkdir -p android/app
+          
+          # إذا كان ملف build.gradle الخاص بك في الجذر، سننقله للمكان الصحيح في تطبيق الأندرويد
+          if [ -f build.gradle ]; then
+            cp build.gradle android/app/build.gradle
+          elif [ -f android/build.gradle ] && [ ! -f android/app/build.gradle ]; then
+            # إذا وضعته داخل مجلد أندرويد مباشرة، سننقله إلى مجلد app الداخلي حيث ينتمي كودك
+            cp android/build.gradle android/app/build.gradle
+          fi
+
+          # كتابة ملف local.properties بالقيم التي حددتها أنت وتضمن التوافق
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          echo "flutter.compileSdkVersion=34" > android/local.properties
+          echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
+          # إضافة خصائص الـ الجرادل لضمان عدم نقص الذاكرة ودعم الاندرويد الحديث
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
 
-      # 5. تحديث إعدادات الكوتلن والجرادل لضمان توافق مكاتب الصوت والاتصال
-      - name: Patch Gradle and Kotlin Configuration
+      # 5. جلب الحزم والمكتبات بشكل صحيح ومطابقتها للهيكل الجديد
+      - name: Install Dependencies
         run: |
-          if [ -f android/build.gradle ]; then
-            sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.9.24"/g' android/build.gradle
-            sed -i 's/kotlin("android") version .*/kotlin("android") version "1.9.24"/g' android/build.gradle
-          fi
+          flutter pub get
 
-      # 6. البناء الذكي للمنصات المستهدفة وتخطي فحص الـ Embedding
+      # 6. البناء النهائي الآمن والمستقر للمنصات المستهدفة
       - name: Build APK Release
         run: |
           flutter build apk --release \
             --target-platform android-arm,android-arm64,android-x64 \
-            --no-tree-shake-icons \
-            --dart-define=android.ignoreEmbeddingVersion=true
+            --no-tree-shake-icons
 
-      # 7. رفع ملف الـ APK النهائي للتحميل
+      # 7. رفع ملف الـ APK النهائي للتحميل مباشرة
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
