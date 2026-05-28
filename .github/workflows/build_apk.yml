@@ -29,11 +29,11 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. بناء هيكل أندرويد حديث 100% لتخطي قيد القوالب غير المدعومة
-      - name: Generate Supported Android Structure
+      # 3. الاعتماد على المجلد الحالي وتوليد الملفات الناقصة فقط دون حذف ملفاتك
+      - name: Integrate and Complete Android Structure
         run: |
           flutter config --no-analytics
-          rm -rf android
+          # تحديث وتوليد الملفات المفقودة فقط مع الحفاظ على ملفاتك الأساسية مرفوعة
           flutter create . --platforms=android --org=com.judeadaiy
 
       # 4. حقن مسار الـ SDK والإصدارات في ملف الخصائص
@@ -44,44 +44,19 @@ jobs:
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # تهيئة الذاكرة ونظام الـ AndroidX ومنع تعارض مكاتب Firebase والصوت
+          # تهيئة الذاكرة ونظام الـ AndroidX ومنع تعارض المكاتب
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
 
-      # 5. الحل القاطع: إعادة صياغة ملف settings.gradle برمجياً ليحتوي على الـ Loader والمكتبات الموحدة
-      - name: Fix settings.gradle for Modern Plugins Compatibility
+      # 5. ترقية الـ Wrapper ليتوافق مع نظام الأندرويد الحديث وجافا 17
+      - name: Upgrade Gradle Wrapper Version
         run: |
-          cat << 'EOF' > android/settings.gradle
-          pluginManagement {
-              def flutterSdkPath = ""
-              propertiesFile(rootProject.projectDir.parentFile.toPath().resolve("local.properties").toFile()).withReader('UTF-8') { reader ->
-                  def props = new Properties()
-                  props.load(reader)
-                  flutterSdkPath = props.getProperty('flutter.sdk')
-              }
-              settingsEvaluated { settings ->
-                  settings.pluginManagement.repositories {
-                      google()
-                      mavenCentral()
-                      gradlePluginPortal()
-                  }
-              }
-          }
+          if [ -f android/gradle/wrapper/gradle-wrapper.properties ]; then
+            sed -i 's/gradle-.*-bin.zip/gradle-8.2-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
+          fi
 
-          plugins {
-              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-              id "com.android.application" version "8.2.1" apply false
-              id "org.jetbrains.kotlin.android" version "1.9.24" apply false
-          }
-
-          include ":app"
-          EOF
-
-          # ترقية الـ Wrapper ليتوافق مع نظام الأظافر الحديث وجافا 17
-          sed -i 's/gradle-.*-bin.zip/gradle-8.2-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
-
-      # 6. تحديث ملف الجرادل للتطبيق لفرض جافا 17 الموحدة وحل تعارض الـ JVM
+      # 6. تحديث ملف الجرادل للتطبيق لفرض جافا 17 الموحدة وحل تعارض الـ JVM (تم إصلاح الـ EOF هنا)
       - name: Patch Application Gradle for Java 17 Compatibility
         run: |
           if [ -f android/app/build.gradle ]; then
@@ -95,24 +70,24 @@ jobs:
             sed -i 's/targetCompatibility .*/targetCompatibility JavaVersion.VERSION_17/g' android/app/build.gradle
             sed -i 's/jvmTarget = .*/jvmTarget = "17"/g' android/app/build.gradle
             
-            # حقن كود برمجى لضمان تمرير الـ SDK لـ connectivity_plus تلقائياً عند التجميع
+            # حقن كود برمجى لضمان تمرير الـ SDK للمشاريع الفرعية تلقائياً عند التجميع
             cat << 'EOF' >> android/app/build.gradle
 
-            subprojects {
-                project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                    kotlinOptions {
-                        jvmTarget = "17"
-                    }
-                }
-                project.tasks.withType(JavaCompile).configureEach {
-                    sourceCompatibility = JavaVersion.VERSION_17
-                    targetCompatibility = JavaVersion.VERSION_17
-                }
-            }
-            EOF
+subprojects {
+    project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+        }
+    }
+    project.tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+EOF
           fi
 
-      # 7. جلب المكتبات من الـ pubspec.yaml الخاص بك
+      # 7. جلب المكتبات من الـ pubspec.yaml الخاص بك واكتشاف حزم الـ Plugins
       - name: Install Dependencies
         run: |
           flutter pub get
