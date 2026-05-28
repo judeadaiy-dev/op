@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. جلب الحزم والمكتبات
+      # 3. جلب الحزم والمكتبات لتحليل متطلباتها
       - name: Install Dependencies
         run: flutter pub get
 
@@ -38,27 +38,24 @@ jobs:
         run: |
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. الحل القاطع: حقن الإعدادات مع مسار الـ Flutter SDK الحقيقي للسيرفر
-      - name: Inject Correct SDK Paths
+      # 5. تأمين قيم الـ SDK المطلوبة في ملف الخصائص
+      - name: Inject SDK Paths
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
 
-      # 6. تحديث الجرادل الآن بأمان بعد تأمين كافة المسارات والنواقص
-      - name: Update Build Tools to Latest Compatible Versions
+      # 6. البناء الذكي مع فرض أحدث إصدارات الكوتلن والجرادل مباشرة عبر التيرمنال
+      - name: Build APK Release with Modern Plugins
         run: |
-          cd android
-          ./gradlew wrapper --gradle-version 8.4
-          cd ..
+          flutter build apk --release --no-tree-shake-icons \
+            --target-platform android-arm,android-arm64,android-x64 \
+            --no-shrink \
+            --dart-define=kotlinVersion=1.9.20 \
+            --gradle-define=android.experimental.r8.disableSealedClassesOptimization=true
 
-      # 7. أمر البناء الصريح والنظيف
-      - name: Build APK Release
-        run: |
-          flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
-
-      # 8. رفع ملف الـ APK النهائي للتحميل
+      # 7. رفع ملف الـ APK النهائي للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
