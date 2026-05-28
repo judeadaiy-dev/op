@@ -33,25 +33,37 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. توليد مجلد أندرويد أصلي ونظيف تماماً من المحرك مباشرة
+      # 4. توليد مجلد أندرويد أصلي ونظيف تماماً من المحرك مباشرة لضمان ربط الـ Embedding
       - name: Recreate Clean Native Android Project
         run: |
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. التعديل الذكي: حقن الإعدادات داخل الملفات الرسمية دون إعادة كتابتها
+      # 5. التعديل الذكي والتوافقية الصارمة بدون تضارب الـ afterEvaluate
       - name: Configure SDK and Fix Dependencies
         run: |
-          # أ. ضبط ملف local.properties ومسار الـ SDK
+          # أ. ضبط ملف local.properties ومسارات الـ SDK
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # ب. إجبار المكاتب الخارجية القديمة على تبني minSdkVersion 23 غصباً عنها لمنع خطأ مكتبة الصوت
-          echo -e "\nsubprojects {\n    afterEvaluate { project ->\n        if (project.hasProperty('android')) {\n            project.android {\n                compileSdkVersion 34\n                defaultConfig {\n                    minSdkVersion 23\n                }\n            }\n        }\n    }\n}" >> android/build.gradle
+          # ب. حقن تعديل الـ SDK الذكي للمكتبات الخارجية فور تحميل المكونات لمنع خطأ مكتبة الصوت والاتصال
+          cat << 'EOF' >> android/build.gradle
 
-      # 6. تشغيل البناء الصافي (سيعتمد على الهيكل الأصلي والملفات الرسمية لفلاتر)
+          subprojects {
+              project.plugins.withType(com.android.build.gradle.BasePlugin.class) {
+                  project.android {
+                      compileSdkVersion 34
+                      defaultConfig {
+                          minSdkVersion 23
+                      }
+                  }
+              }
+          }
+          EOF
+
+      # 6. تشغيل البناء القياسي المستقر
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
@@ -62,4 +74,3 @@ jobs:
         with:
           name: App-ChatApp-Release
           path: build/app/outputs/flutter-apk/app-release.apk
-
