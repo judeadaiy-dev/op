@@ -33,13 +33,13 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. التوليد القياسي الذكي: بناء مجلد أندرويد متكامل يتوافق مع حزمة chat_app
+      # 4. بناء هيكل أندرويد متكامل يتوافق مع حزمة chat_app
       - name: Recreate Base Android Structure
         run: |
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. الهندسة الذكية: حقن التوافقية لملفات الإعدادات والـ SDK لقطع دابر مشاكل الحزم القديمة
+      # 5. الهندسة الذكية: حقن التوافقية لملفات الإعدادات والـ SDK بالكامل
       - name: Inject Compatibility Layer
         run: |
           # أ. ضبط ملف الخصائص الأساسي ومسارات الـ SDK
@@ -80,7 +80,29 @@ jobs:
           include ":app"
           EOF
 
-          # ج. كتابة ملف app/build.gradle لفرض الحزمة الصريحة وجعل كتلة الـ plugins في القمة تماماً
+          # جـ. الحل القاطع: كتابة ملف android/build.gradle الرئيسي (الخارجي) لتعريف المترجم بمكتبات فلاتر
+          cat << 'EOF' > android/build.gradle
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.buildDir = '../build'
+          subprojects {
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
+          }
+          subprojects {
+              project.evaluationDependsOn(':app')
+          }
+
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
+
+          # د. كتابة ملف android/app/build.gradle (الداخلي) لفرض الحزمة الصريحة وجعل كتلة الـ plugins في القمة
           cat << 'EOF' > android/app/build.gradle
           plugins {
               id "com.android.application"
@@ -123,7 +145,7 @@ jobs:
               }
           }
 
-          // إجبار كل المكاتب الخارجية القديمة (مثل جلب النت والرسائل الصوتية) على التوافق مع قيم مشروعك
+          // إجبار كل المكاتب الخارجية القديمة على التوافق مع قيم مشروعك
           subprojects {
               afterEvaluate { project ->
                   if (project.hasProperty('android')) {
@@ -144,7 +166,7 @@ jobs:
           }
           EOF
 
-          # د. تنظيف وحقن ملف MainActivity.kt ليكون مطابقاً للحزمة com.judeadaiy.chat_app والمسار الجديد
+          # هـ. تنظيف وحقن ملف MainActivity.kt ليكون مطابقاً للحزمة والمسار الجديد تماماً
           rm -rf android/app/src/main/kotlin
           mkdir -p android/app/src/main/kotlin/com/judeadaiy/chat_app
           cat << 'EOF' > android/app/src/main/kotlin/com/judeadaiy/chat_app/MainActivity.kt
@@ -167,4 +189,3 @@ jobs:
         with:
           name: App-ChatApp-Release
           path: build/app/outputs/flutter-apk/app-release.apk
-
