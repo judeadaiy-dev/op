@@ -29,31 +29,36 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. إكمال الهيكلية الناقصة وتنظيف الكاش بالكامل
+      # 3. مزامنة ملفات أندرويد وتنظيف الذاكرة المؤقتة
       - name: Integrate and Complete Android Structure
         run: |
           flutter config --no-analytics
           flutter create . --platforms=android --org=com.judeadaiy
           flutter clean
 
-      # 4. التطهير الشامل لملف build.gradle من أي استدعاءات مكررة أو قديمة لفلاتر
-      - name: Fix Duplicate Flutter Gradle Plugins
+      # 4. التطهير الحاسم لملفات Gradle لقطع دابر تكرار المهام (generateLockfiles)
+      - name: Purge Legacy Flutter Configurations
         run: |
+          # تنظيف ملف الجرادل الرئيسي للتطبيق من الاستدعاءات القديمة والمكررة
           if [ -f android/app/build.gradle ]; then
-            # حذف أسطر apply from التي تستدعي سكريبت فلاتر القديم بأي صيغة كانت
             sed -i '/apply from:.*flutter/d' android/app/build.gradle
             sed -i '/apply plugin:.*flutter/d' android/app/build.gradle
             sed -i '/def flutterRoot/d' android/app/build.gradle
           fi
 
-      # 5. ربط ملف الإعدادات بالجذر مؤقتاً لحل مشكلة المسارات
+          # تنظيف ملف الجرادل الخاص بالمشروع ككل
+          if [ -f android/build.gradle ]; then
+            sed -i '/apply from:.*flutter/d' android/build.gradle
+          fi
+
+      # 5. ربط الإعدادات بالجذر مؤقتاً لتفادي مشاكل التعرف على المسارات
       - name: Link Settings Gradle to Root
         run: |
           if [ -f android/settings.gradle ]; then
             cp android/settings.gradle ./settings.gradle
           fi
 
-      # 6. حقن مسار الـ SDK والإصدارات القياسية في ملف الخصائص
+      # 6. حقن مسار الـ SDK والإصدارات القياسية المستقرة
       - name: Configure SDK and Gradle Properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
@@ -61,21 +66,21 @@ jobs:
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # تهيئة الذاكرة والـ AndroidX لمنع تعارض المكاتب
+          # تهيئة الذاكرة والـ AndroidX الفعال لمنع تعارض مكاتب قاعدة البيانات والـ Chat
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
           
           cp android/local.properties ./local.properties
 
-      # 7. ترقية الـ Wrapper ليتوافق مع نظام الأندرويد الحديث وجافا 17
+      # 7. ترقية الـ Wrapper ليتوافق تماماً مع نظام أندرويد الحديث وجافا 17
       - name: Upgrade Gradle Wrapper Version
         run: |
           if [ -f android/gradle/wrapper/gradle-wrapper.properties ]; then
             sed -i 's/gradle-.*-bin.zip/gradle-8.2-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
           fi
 
-      # 8. توحيد جافا 17 وتمرير الـ SDK للمشاريع والمكتبات الفرعية تلقائياً
+      # 8. توحيد جافا 17 لجميع مشاريع المكاتب الفرعية تلقائياً عند التجميع
       - name: Patch Application Gradle for Java 17 Compatibility
         run: |
           if [ -f android/app/build.gradle ]; then
@@ -111,7 +116,7 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
 
-      # 11. رفع ملف الـ APK الناتج لتتمكن من تحميله مباشرة
+      # 11. رفع ملف الـ APK الناتج لتتمكن من تحميله مباشرة من السيرفر
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
