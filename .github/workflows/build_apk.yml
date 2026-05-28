@@ -83,10 +83,17 @@ jobs:
           
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
-      # 5. خطوتك الذكية: نسخ ملف الإعداد اليدوي الخاص بك ليستخدمه السيرفر مباشرة
-      - name: Use Manual SDK Configuration
+      # 5. فكرتك العبقرية: جعل السيرفر يكتب ملف الخصائص يدوياً ويحقنه في ملف البناء مباشرة
+      - name: Generate Manual Configuration on Server
         run: |
-          cp local.properties android/local.properties
+          # كتابة ملف الخصائص بشكل مباشر داخل المجلد المولد
+          echo "flutter.compileSdkVersion=34" > android/local.properties
+          echo "flutter.minSdkVersion=23" >> android/local.properties
+          echo "flutter.targetSdkVersion=34" >> android/local.properties
+          
+          # تعديل ملف build.gradle ليقرأ القيمة 23 الصريحة في الـ defaultConfig دون أي وسيط ديناميكي
+          APP_GRADLE="android/app/build.gradle"
+          sed -i 's/minSdkVersion.*/minSdkVersion 23/g' $APP_GRADLE
 
       # 6. أمر البناء الفعلي الموجه للأندرويد
       - name: Build Signed APK
@@ -99,4 +106,3 @@ jobs:
         with:
           name: SeaChat-Release-Signed-APK
           path: build/app/outputs/flutter-apk/app-release.apk
-
