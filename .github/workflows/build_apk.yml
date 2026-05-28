@@ -39,7 +39,7 @@ jobs:
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. السحر الهندسي: حقن ملفات التوافقية الشاملة بالترتيب الصحيح
+      # 5. السحر الهندسي: حقن ملفات التوافقية الشاملة بالترتيب الصحيح مع إصلاح ملف الكوتلن
       - name: Inject Compatibility Layer
         run: |
           # أ. ضبط ملف الخصائص الأساسي
@@ -80,7 +80,7 @@ jobs:
           include ":app"
           EOF
 
-          # ج. إعادة كتابة ملف app/build.gradle وجعل كتلة الـ plugins في السطر الأول تماماً!
+          # ج. إعادة كتابة ملف app/build.gradle ليكون نظامياً 100%
           cat << 'EOF' > android/app/build.gradle
           plugins {
               id "com.android.application"
@@ -123,7 +123,6 @@ jobs:
               }
           }
 
-          // فرض معايير الـ SDK الحديثة على كل المكتبات الخارجية والـ Plugins تلقائياً
           subprojects {
               afterEvaluate { project ->
                   if (project.hasProperty('android')) {
@@ -141,6 +140,17 @@ jobs:
                       jvmTarget = "17"
                   }
               }
+          }
+          EOF
+
+          # د. إصلاح وحقن ملف MainActivity.kt لإنهاء مشكلة التوجيه وUnresolved reference نهائياً
+          mkdir -p android/app/src/main/kotlin/com/judeadaiy/op
+          cat << 'EOF' > android/app/src/main/kotlin/com/judeadaiy/op/MainActivity.kt
+          package com.judeadaiy.op
+
+          import io.flutter.embedding.android.FlutterActivity
+
+          class MainActivity: FlutterActivity() {
           }
           EOF
 
