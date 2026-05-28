@@ -27,27 +27,27 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 1. تأمين ملف الخصائص يدوياً داخل السيرفر بالمقاييس المطلوبة ليتطابق مع ملفك
-      - name: Ensure local.properties configuration
+      # 1. توليد مجلد أندرويد تلقائياً بالاعتماد على الاسم المكتوب في pubspec.yaml الخاص بك
+      - name: Recreate Android Project Files
         run: |
-          mkdir -p android
+          flutter create . --platforms=android --org=com.judeadaiy
+          flutter pub get
+
+      # 2. حقن إعدادات الـ SDK المطلوبة داخل ملف الخصائص بالسيرفر
+      - name: Inject SDK Configurations
+        run: |
           echo "flutter.compileSdkVersion=34" > android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
 
-      # 2. جلب حزم ومكتبات المشروع القياسية (pub get)
-      - name: Install dependencies
-        run: flutter pub get
-
-      # 3. أمر البناء الفعلي والنظيف الموجه للملفات التي رفعتها أنت بيدك
+      # 3. أمر البناء الفعلي النظيف (سيقرأ فلاتر الـ SDK 23 تلقائياً)
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 4. رفع ملف الـ APK النهائي لتتمكن من تحميله فوراً
+      # 4. رفع ملف الـ APK النهائي للتحميل باسم مشروعك الأصلي
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaChat-Release-APK
+          name: App-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
-
