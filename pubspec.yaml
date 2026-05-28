@@ -7,6 +7,7 @@ environment:
   sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
+dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
@@ -14,45 +15,46 @@ dependencies:
 
   # State Management
   provider: ^6.1.2
-  # Backend
-  supabase_flutter: ^2.12.4
+
+  # Backend (جعلناها مرنة لتختار المتوافق مع دارت 3.4.0)
+  supabase_flutter: any
   
-  # Firebase - مصفوفة الإصدار المتوافق تلقائياً مع فلاتر 3.22
+  # Firebase - مصفوفة الإصدار المتوافق تلقائياً
   firebase_core: any
   firebase_messaging: any
   flutter_local_notifications: any
 
   # UI & Theme
-  google_fonts: ^6.2.1
+  google_fonts: any
   glassmorphism: ^3.0.0
-  flutter_animate: ^4.5.2
+  flutter_animate: any
 
   # Images & Files
-  image_picker: ^1.1.2
-  cached_network_image: ^3.4.0
+  image_picker: any
+  cached_network_image: any
   
   # Utils
-  intl: ^0.19.0
-  timeago: ^3.7.0
-  uuid: ^4.5.1
+  intl: any
+  timeago: any
+  uuid: any
   
-  # Permissions - للمايك والكاميرا والتخزين
-  permission_handler: ^11.3.1
+  # Permissions
+  permission_handler: any
   
-  # Audio Recording - تم استبدال الحزمة الفرعية القديمة بالحزمة الأم الحديثة لمنع خطأ البناء v1 Embedding
-  record: ^7.0.0
+  # Audio Recording - النسخة الحديثة المتوافقة
+  record: any
   
-  # Audio Player - تشغيل الرسائل الصوتية
-  just_audio: ^0.10.5
+  # Audio Player - تم فتح الإصدار لتتجنب شرط دارت الحديث
+  just_audio: any
   
-  # File Picker - اختيار ملفات
-  file_picker: ^8.1.2
+  # File Picker
+  file_picker: any
   
-  # Path - مسارات الملفات
-  path_provider: ^2.1.4
+  # Path
+  path_provider: any
   
-  # Connectivity - فحص النت
-  connectivity_plus: ^6.1.0
+  # Connectivity
+  connectivity_plus: any
 
 dev_dependencies:
   flutter_test:
