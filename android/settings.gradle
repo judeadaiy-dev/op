@@ -1,0 +1,24 @@
+pluginManagement {
+    def flutterSdkPath = ""
+    propertiesFile(rootProject.projectDir.parentFile.toPath().resolve("local.properties").toFile()).withReader('UTF-8') { reader ->
+        def props = new Properties()
+        props.load(reader)
+        flutterSdkPath = props.getProperty('flutter.sdk')
+    }
+    settingsEvaluated { settings ->
+        settings.pluginManagement.repositories {
+            google()
+            mavenCentral()
+            gradlePluginPortal()
+        }
+    }
+}
+
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version "8.2.1" apply false
+    id "org.jetbrains.kotlin.android" version "1.9.24" apply false
+}
+
+include ":app"
+UPDATE public.profiles SET role = 'admin' WHERE username = 'يوزرك';
