@@ -27,7 +27,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 1. توليد ملفات منصة الأندرويد القياسية
+      # 1. توليد ملفات منصة الأندرويد القياسية تلقائياً
       - name: Recreate Android platform files
         run: |
           flutter create . --platforms=android --project-name=chat_app --org=com.judeadaiy
@@ -83,17 +83,10 @@ jobs:
           
           sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
 
-      # 5. الحقن القاطع للـ minSdkVersion تحت رأس الـ defaultConfig مباشرة
-      - name: Force minSdkVersion 23 via Android properties
+      # 5. خطوتك الذكية: نسخ ملف الإعداد اليدوي الخاص بك ليستخدمه السيرفر مباشرة
+      - name: Use Manual SDK Configuration
         run: |
-          # 1. تثبيت الخصائص الاحتياطية في ملف local.properties
-          echo "flutter.compileSdkVersion=34" >> android/local.properties
-          echo "flutter.minSdkVersion=23" >> android/local.properties
-          echo "flutter.targetSdkVersion=34" >> android/local.properties
-          
-          # 2. حقن سطر صريح وقطعي لـ minSdkVersion 23 بعد فتح قوس الـ defaultConfig مباشرة
-          APP_GRADLE="android/app/build.gradle"
-          sed -i '/defaultConfig {/a \        minSdkVersion 23' $APP_GRADLE
+          cp local.properties android/local.properties
 
       # 6. أمر البناء الفعلي الموجه للأندرويد
       - name: Build Signed APK
