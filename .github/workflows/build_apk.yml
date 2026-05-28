@@ -1,4 +1,4 @@
-name: Smart Build Flutter APK
+name: Modern Build Flutter APK 2026
 
 on:
   push:
@@ -14,14 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تهيئة بيئة جافا الحديثة والمستقرة (JDK 17)
+      # 1. تهيئة بيئة جافا الحديثة المتوافقة كلياً (JDK 17)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. تثبيت محرك فلاتر المستقر بالإصدار 3.22.0
+      # 2. تثبيت محرك فلاتر الحديث بالإصدار المستقر 3.22.0
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -29,117 +29,61 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. بناء هيكل أندرويد نظيف كلياً من السيرفر
-      - name: Force Re-create Clean Android Structure
+      # 3. بناء هيكل أندرويد حديث 100% بأحدث نظام قالب من فلاتر
+      - name: Re-create Modern Android Structure
         run: |
           flutter config --no-analytics
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 4. التعديل الجذري وحقن الكود الكلاسيكي المتوافق مع المكاتب لتعريف متغير flutter
-      - name: Patch Android Project For Plus Plugins Compatibility
-        run: |
-          # تحديث وإعادة صياغة ملف android/build.gradle بالكامل ليحتوي على التوزيعة الصحيحة للمكاتب
-          cat << 'EOF' > android/build.gradle
-          buildscript {
-              ext.kotlin_version = '1.9.24'
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.2.1'
-                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-              }
-          }
-
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-
-          rootProject.buildDir = '../build'
-          subprojects {
-              project.buildDir = "${rootProject.buildDir}/${project.name}"
-          }
-          subprojects {
-              project.evaluationDependsOn(':app')
-          }
-
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
-          }
-          EOF
-
-          # إصلاح ملف settings.gradle ليتكامل مع البناء الكلاسيكي بدلاً من الـ DSL المقفل
-          cat << 'EOF' > android/settings.gradle
-          include ':app'
-
-          def localProperties = new Properties()
-          def localPropertiesFile = new File(rootProject.projectDir, "local.properties")
-          if (localPropertiesFile.exists()) {
-              localPropertiesFile.withReader('UTF-8') { reader ->
-                  localProperties.load(reader)
-              }
-          }
-
-          def flutterSdkPath = localProperties.getProperty('flutter.sdk')
-          if (flutterSdkPath == null) {
-              throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-          }
-
-          includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-          EOF
-
-      # 5. حقن وتثبيت قيم الـ SDK الصريحة في ملف الخصائص لإنهاء خطأ compileSdkVersion المفقود
-      - name: Inject Complete SDK Paths
+      # 4. حقن قيم الـ SDK الحديثة في ملف الخصائص
+      - name: Inject Modern SDK Paths
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # تهيئة الذاكرة والـ AndroidX لمنع تعارض مكاتب Firebase والصوت
+          # تهيئة إعدادات الذاكرة ونظام الـ AndroidX
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
 
-      # 6. تحديث إصدار الـ Gradle Wrapper تلقائياً لتخطي قيد إصدار 7.6.3 حل المشكلة الحالي
-      - name: Upgrade Gradle Wrapper Version
+      # 5. الحل الحديث والجذري: إجبار الجرادل على توحيد الجافا (JVM 17) لجميع المكتبات لعام 2026
+      - name: Force Java 17 Globally on All Plugins
         run: |
-          if [ -f android/gradle/wrapper/gradle-wrapper.properties ]; then
-            sed -i 's/gradle-.*-all.zip/gradle-8.2-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
-          fi
+          # حقن كود ذكي في ملف android/app/build.gradle لتوحيد مترجم الجافا والكوتلن على إصدار 17 لجميع الحزم
+          cat << 'EOF' >> android/app/build.gradle
 
-      # 7. تعديل ملف التطبيق الداخلي لفرض التحديثات وتجنب التعارضات
-      - name: Patch Application Configuration
-        run: |
-          if [ -f android/app/build.gradle ]; then
-            sed -i 's/minSdkVersion .*/minSdkVersion 23/g' android/app/build.gradle
-            sed -i 's/targetSdkVersion .*/targetSdkVersion 34/g' android/app/build.gradle
-            sed -i 's/compileSdkVersion .*/compileSdkVersion 34/g' android/app/build.gradle
-            sed -i 's/applicationId .*/applicationId "com.judeadaiy.chat_app"/g' android/app/build.gradle
-            sed -i 's/namespace .*/namespace "com.judeadaiy.chat_app"/g' android/app/build.gradle
-          fi
+          // توحيد إصدار الجافا لجميع المكتبات الفرعية والمشاريع المشتركة لمنع تعارض الـ JVM
+          subprojects {
+              project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                  kotlinOptions {
+                      jvmTarget = "17"
+                  }
+              }
+              project.tasks.withType(JavaCompile).configureEach {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+          }
+          EOF
 
-      # 8. جلب المكتبات والحزم لتتطابق مع الهيكل المعياري الجديد
+      # 6. جلب المكتبات والحزم الحديثة من ملف الـ pubspec.yaml الخاص بك
       - name: Install Dependencies
         run: |
           flutter pub get
 
-      # 9. البناء النهائي المستقر وتوليد ملف الـ APK
+      # 7. البناء الذكي والنهائي للمنصات المستهدفة (بأحدث نظام)
       - name: Build APK Release
         run: |
           flutter build apk --release \
             --target-platform android-arm,android-arm64,android-x64 \
             --no-tree-shake-icons
 
-      # 10. رفع ملف الـ APK النهائي للتحميل مباشرة من الـ Artifacts
+      # 8. رفع ملف الـ APK النهائي للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: App-Latest-Release-APK
+          name: App-Modern-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
-
