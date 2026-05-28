@@ -27,86 +27,27 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 1. توليد ملفات منصة الأندرويد القياسية تلقائياً
-      - name: Recreate Android platform files
+      # 1. تأمين ملف الخصائص يدوياً داخل السيرفر بالمقاييس المطلوبة ليتطابق مع ملفك
+      - name: Ensure local.properties configuration
         run: |
-          flutter create . --platforms=android --project-name=chat_app --org=com.judeadaiy
-          flutter pub get
-
-      # 2. إضافة الصلاحيات النظامية داخل الـ Manifest
-      - name: Add Permissions to AndroidManifest
-        run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          sed -i '/<\/manifest>/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>' $MANIFEST
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' $MANIFEST
-
-      # 3. تهيئة إعدادات حزمة Google Services لبناء التطبيق بسلاسة
-      - name: Setup Google Services Configuration
-        run: |
-          SETTINGS_GRADLE="android/settings.gradle"
-          sed -i '/plugins {/a \    id "com.google.gms.google-services" version "4.4.1" apply false' $SETTINGS_GRADLE
-          
-          APP_GRADLE="android/app/build.gradle"
-          sed -i '/plugins {/a \    id "com.google.gms.google-services"' $APP_GRADLE
-          
-          mkdir -p android/app
-          echo '{
-            "project_info": {
-              "project_number": "123456789",
-              "project_id": "chat-app-auto"
-            },
-            "client": [{
-              "client_info": {
-                "mobilesdk_app_id": "1:123456789:android:abcdef",
-                "android_client_info": {"package_name": "com.judeadaiy.chat_app"}
-              },
-              "api_key": [{"current_key": "AIzaSyDummy-Key"}]
-            }]
-          }' > android/app/google-services.json
-
-      # 4. إنشاء مفتاح توقيع (Keystore) مؤقت لتوقيع نسخة الـ Release
-      - name: Create Keystore and Sign App
-        run: |
-          keytool -genkey -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload \
-            -dname "CN=Auto Build, OU=Dev, O=ChatApp, L=Basra, C=IQ" \
-            -storepass android123 -keypass android123
-          
-          echo "storePassword=android123" > android/key.properties
-          echo "keyPassword=android123" >> android/key.properties
-          echo "keyAlias=upload" >> android/key.properties
-          echo "storeFile=upload-keystore.jks" >> android/key.properties
-          
-          APP_GRADLE="android/app/build.gradle"
-          sed -i '/android {/i \def keystoreProperties = new Properties()\ndef keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\n    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n}\n' $APP_GRADLE
-          
-          sed -i '/buildTypes {/i \    signingConfigs {\n        release {\n            keyAlias keystoreProperties["keyAlias"]\n            keyPassword keystoreProperties["keyPassword"]\n            storeFile file(keystoreProperties["storeFile"])\n            storePassword keystoreProperties["storePassword"]\n        }\n    }\n' $APP_GRADLE
-          
-          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' $APP_GRADLE
-
-      # 5. الإصلاح الذكي والجذري لتغيير الـ minSdkVersion بدون إفساد كتل فلاتر
-      - name: Generate Manual Configuration on Server
-        run: |
-          # كتابة ملف الخصائص القياسي في مكانه الصحيح
+          mkdir -p android
           echo "flutter.compileSdkVersion=34" > android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
-          
-          APP_GRADLE="android/app/build.gradle"
-          # تعديل السطر داخل الـ defaultConfig فقط (الذي لا يحتوي على علامة =)
-          sed -i '/defaultConfig {/,/}/s/minSdkVersion.*/minSdkVersion 23/' $APP_GRADLE
-          
-          # تعديل السطر العلوي في كتلة flutter (الذي يحتوي على علامة =) ليكون متوافقاً مع الهيكلية
-          sed -i 's/minSdkVersion = .*/minSdkVersion = 23/g' $APP_GRADLE 2>/dev/null || true
 
-      # 6. أمر البناء الفعلي الموجه للأندرويد
-      - name: Build Signed APK
+      # 2. جلب حزم ومكتبات المشروع القياسية (pub get)
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 3. أمر البناء الفعلي والنظيف الموجه للملفات التي رفعتها أنت بيدك
+      - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 7. رفع ملف الـ APK النهائي
+      # 4. رفع ملف الـ APK النهائي لتتمكن من تحميله فوراً
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaChat-Release-Signed-APK
+          name: SeaChat-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
 
