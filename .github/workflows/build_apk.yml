@@ -30,10 +30,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. جلب المكاتب الحديثة وتثبيتها بشكل صحيح
+      # 3. جلب المكاتب الحديثة أونلاين وتثبيتها بشكل صحيح لتجنب أخطاء الكاش
       - name: Install Dependencies
         run: |
-          flutter pub downgrade --offline
+          flutter config --no-analytics
           flutter pub get
 
       # 4. تهيئة الخصائص الذكية لأندرويد وحقن قيم الـ SDK المتوافقة مع المكاتب الحديثة
@@ -54,7 +54,7 @@ jobs:
       # 5. الفحص الذكي وتحديث إصدار Kotlin وتخطي فحص الـ Embedding القديم
       - name: Patch Gradle and Kotlin Configuration
         run: |
-          # فرض إصدار كوتلن حديث ومتوافق مع مكتبة Firebase و Record الجديدة لعام 2026
+          # فرض إصدار كوتلن حديث ومتوافق مع مكتبة Firebase و Record الجديدة
           if [ -f android/build.gradle ]; then
             sed -i 's/ext.kotlin_version = .*/ext.kotlin_version = "1.9.24"/g' android/build.gradle
             sed -i 's/kotlin("android") version .*/kotlin("android") version "1.9.24"/g' android/build.gradle
