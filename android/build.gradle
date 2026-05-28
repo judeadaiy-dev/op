@@ -17,12 +17,20 @@ android {
         jvmTarget = '17'
     }
 
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
     defaultConfig {
         applicationId "com.judeadaiy.chat_app"
+        
+        // التحديث الصريح والنهائي لحل مشكلة حزمة الصوت والمكتبات
         minSdkVersion 23
         targetSdkVersion 34
-        versionCode 1
-        versionName "1.0.0"
+        
+        // تركناها ديناميكية لتقرأ من pubspec.yaml الخاص بك تلقائياً
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
     }
 
     buildTypes {
@@ -34,7 +42,11 @@ android {
     }
 }
 
-// حل مشكلة توافقية الجافا 17 الصارمة مع كل المكاتب الخارجية تلقائياً
+flutter {
+    source '../..'
+}
+
+// حل مشكلة توافقية الجافا 17 الصارمة مع كل المكاتب الخارجية تلقائياً (ذكاء برمي خالص)
 subprojects {
     project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
@@ -46,4 +58,3 @@ subprojects {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
-
