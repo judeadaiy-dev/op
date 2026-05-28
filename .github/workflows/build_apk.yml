@@ -29,54 +29,31 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. تهيئة وإكمال ملفات أندرويد الناقصة والتنظيف الفوري
+      # 3. إكمال الهيكلية الناقصة وتنظيف الكاش بالكامل
       - name: Integrate and Complete Android Structure
         run: |
           flutter config --no-analytics
           flutter create . --platforms=android --org=com.judeadaiy
           flutter clean
 
-      # 4. زرع ملف settings.gradle في المجلد الرئيسي وفي مجلد android لمنع تعارض مكاتب فلاتر
-      - name: Rewrite and Fix Settings Gradle (Root & Android)
+      # 4. التطهير الشامل لملف build.gradle من أي استدعاءات مكررة أو قديمة لفلاتر
+      - name: Fix Duplicate Flutter Gradle Plugins
         run: |
-          mkdir -p android
-          
-          # كود الإعدادات القياسي الحديث
-          cat << 'EOF' > android/settings.gradle
-          pluginManagement {
-              def flutterSdkPath = {
-                  def properties = new Properties()
-                  def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) {
-                      file.withReader("UTF-8") { reader -> properties.load(reader) }
-                  }
-                  def sdkPath = properties.getProperty("flutter.sdk")
-                  assert sdkPath != null, "flutter.sdk not set in local.properties"
-                  return sdkPath
-              }()
+          if [ -f android/app/build.gradle ]; then
+            # حذف أسطر apply from التي تستدعي سكريبت فلاتر القديم بأي صيغة كانت
+            sed -i '/apply from:.*flutter/d' android/app/build.gradle
+            sed -i '/apply plugin:.*flutter/d' android/app/build.gradle
+            sed -i '/def flutterRoot/d' android/app/build.gradle
+          fi
 
-              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+      # 5. ربط ملف الإعدادات بالجذر مؤقتاً لحل مشكلة المسارات
+      - name: Link Settings Gradle to Root
+        run: |
+          if [ -f android/settings.gradle ]; then
+            cp android/settings.gradle ./settings.gradle
+          fi
 
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-
-          plugins {
-              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-              id "com.android.application" version "8.2.0" apply false
-              id "org.jetbrains.kotlin.android" version "1.8.22" apply false
-          }
-
-          include ":app"
-          EOF
-          
-          # نسخ نفس الملف للجذر (Root) لحل مشكلة الإضافة المباشرة الفاشلة
-          cp android/settings.gradle ./settings.gradle
-
-      # 5. حقن مسار الـ SDK والإصدارات في ملف الخصائص
+      # 6. حقن مسار الـ SDK والإصدارات القياسية في ملف الخصائص
       - name: Configure SDK and Gradle Properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
@@ -84,36 +61,32 @@ jobs:
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # تهيئة الذاكرة ونظام الـ AndroidX ومنع تعارض المكاتب
+          # تهيئة الذاكرة والـ AndroidX لمنع تعارض المكاتب
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
           
-          # نسخ الـ local.properties للجذر أيضاً احتياطاً
           cp android/local.properties ./local.properties
 
-      # 6. ترقية الـ Wrapper ليتوافق مع نظام الأندرويد الحديث وجافا 17
+      # 7. ترقية الـ Wrapper ليتوافق مع نظام الأندرويد الحديث وجافا 17
       - name: Upgrade Gradle Wrapper Version
         run: |
           if [ -f android/gradle/wrapper/gradle-wrapper.properties ]; then
             sed -i 's/gradle-.*-bin.zip/gradle-8.2-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
           fi
 
-      # 7. تحديث ملف الجرادل للتطبيق لفرض جافا 17 الموحدة وحل تعارض الـ JVM
+      # 8. توحيد جافا 17 وتمرير الـ SDK للمشاريع والمكتبات الفرعية تلقائياً
       - name: Patch Application Gradle for Java 17 Compatibility
         run: |
           if [ -f android/app/build.gradle ]; then
-            # فرض قيم الـ SDK الصريحة واسم الحزمة المطلوبة لتطبيقك
             sed -i 's/minSdkVersion .*/minSdkVersion 23/g' android/app/build.gradle
             sed -i 's/targetSdkVersion .*/targetSdkVersion 34/g' android/app/build.gradle
             sed -i 's/compileSdkVersion .*/compileSdkVersion 34/g' android/app/build.gradle
             
-            # توحيد جافا 17 للكوتلن والجافا لجميع المكتبات الفرعية والمشاريع المشتركة لمنع تعارض الـ JVM
             sed -i 's/sourceCompatibility .*/sourceCompatibility JavaVersion.VERSION_17/g' android/app/build.gradle
             sed -i 's/targetCompatibility .*/targetCompatibility JavaVersion.VERSION_17/g' android/app/build.gradle
             sed -i 's/jvmTarget = .*/jvmTarget = "17"/g' android/app/build.gradle
             
-            # حقن كود برمجى لضمان تمرير الـ SDK للمشاريع الفرعية تلقائياً عند التجميع
             cat << 'EOF' >> android/app/build.gradle
 
             subprojects {
@@ -130,15 +103,15 @@ jobs:
           EOF
           fi
 
-      # 8. تحميل حزم الاعتماديات (Dependencies) الخاصة بفلاتر
+      # 9. تحميل حزم الاعتماديات (Dependencies)
       - name: Install Dependencies
         run: flutter pub get
 
-      # 9. البناء الفعلي لملف الـ APK بصيغة الـ Release
+      # 10. البناء الفعلي لملف الـ APK بصيغة الـ Release
       - name: Build APK
         run: flutter build apk --release
 
-      # 10. رفع ملف الـ APK الناتج لتتمكن من تحميله مباشرة من صفحة الـ Actions
+      # 11. رفع ملف الـ APK الناتج لتتمكن من تحميله مباشرة
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
