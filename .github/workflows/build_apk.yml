@@ -14,12 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 1. تهيئة بيئة الجافا الحديثة والمستقرة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # 2. تهيئة محرك فلاتر المستقر
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -27,10 +29,19 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Install Dependencies
-        run: flutter pub get
+      # 3. تنظيف السيرفر من أي ملفات كاش قديمة مسببة للمشكلة
+      - name: Clean Project Cache
+        run: |
+          flutter pub get
+          flutter clean
 
-      # هنا نعتمد على مجلد الأندرويد الأصلي الخاص بك، وفقط نغذي ملف الخصائص الرسمي بالقيم المطلوبة
+      # 4. الحل الرسمي: إعادة توليد مجلد الأندرويد بأمر فلاتر القياسي المدعوم
+      - name: Recreate Supported Android Project
+        run: |
+          rm -rf android
+          flutter create . --platforms=android --org=com.judeadaiy
+
+      # 5. تمرير إعدادات الـ SDK المطلوبة عبر الملف الرسمي local.properties
       - name: Configure Android SDK via Local Properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
@@ -38,10 +49,12 @@ jobs:
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
 
+      # 6. البناء النظيف والنهائي
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
+      # 7. رفع ملف الـ APK النهائي للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
