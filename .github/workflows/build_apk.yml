@@ -1,4 +1,4 @@
-name: Ultimate Stable Flutter Build
+name: Ultimate Native Flutter Build
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تهيئة بيئة الجافا الحديثة والمستقرة
+      # 1. تهيئة بيئة الجافا الحديثة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -29,156 +29,29 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. جلب الحزم والمكتبات المذكورة في pubspec.yaml
+      # 3. جلب الحزم والمكتبات
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. بناء هيكل أندرويد متكامل يتوافق مع حزمة chat_app
-      - name: Recreate Base Android Structure
+      # 4. توليد مجلد أندرويد أصلي ونظيف تماماً من المحرك مباشرة
+      - name: Recreate Clean Native Android Project
         run: |
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. الهندسة الذكية: حقن التوافقية لملفات الإعدادات والـ SDK بالكامل
-      - name: Inject Compatibility Layer
+      # 5. التعديل الذكي: حقن الإعدادات داخل الملفات الرسمية دون إعادة كتابتها
+      - name: Configure SDK and Fix Dependencies
         run: |
-          # أ. ضبط ملف الخصائص الأساسي ومسارات الـ SDK
+          # أ. ضبط ملف local.properties ومسار الـ SDK
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.compileSdkVersion=34" >> android/local.properties
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
           
-          # ب. كتابة ملف settings.gradle ليدعم استدعاء الحزم التلقائي بنظام مستقر
-          cat << 'EOF' > android/settings.gradle
-          pluginManagement {
-              def flutterSdkPath = {
-                  def properties = new Properties()
-                  def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) {
-                      properties.load(file.newDataInputStream())
-                  }
-                  def sdkPath = properties.getProperty("flutter.sdk")
-                  assert sdkPath != null, "flutter.sdk not set in local.properties"
-                  return sdkPath
-              }()
+          # ب. إجبار المكاتب الخارجية القديمة على تبني minSdkVersion 23 غصباً عنها لمنع خطأ مكتبة الصوت
+          echo -e "\nsubprojects {\n    afterEvaluate { project ->\n        if (project.hasProperty('android')) {\n            project.android {\n                compileSdkVersion 34\n                defaultConfig {\n                    minSdkVersion 23\n                }\n            }\n        }\n    }\n}" >> android/build.gradle
 
-              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-
-          plugins {
-              id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-              id "com.android.application" version "7.3.0" apply false
-              id "org.jetbrains.kotlin.android" version "1.8.22" apply false
-          }
-
-          include ":app"
-          EOF
-
-          # جـ. الحل القاطع: كتابة ملف android/build.gradle الرئيسي (الخارجي) لتعريف المترجم بمكتبات فلاتر
-          cat << 'EOF' > android/build.gradle
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-
-          rootProject.buildDir = '../build'
-          subprojects {
-              project.buildDir = "${rootProject.buildDir}/${project.name}"
-          }
-          subprojects {
-              project.evaluationDependsOn(':app')
-          }
-
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
-          }
-          EOF
-
-          # د. كتابة ملف android/app/build.gradle (الداخلي) لفرض الحزمة الصريحة وجعل كتلة الـ plugins في القمة
-          cat << 'EOF' > android/app/build.gradle
-          plugins {
-              id "com.android.application"
-              id "org.jetbrains.kotlin.android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-
-          def localProperties = new Properties()
-          def localPropertiesFile = rootProject.file('local.properties')
-          if (localPropertiesFile.exists()) {
-              localPropertiesFile.withReader('UTF-8') { reader ->
-                  localProperties.load(reader)
-              }
-          }
-
-          def flutterRoot = localProperties.getProperty('flutter.sdk')
-          if (flutterRoot == null) {
-              throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-          }
-
-          android {
-              namespace "com.judeadaiy.chat_app"
-              compileSdkVersion 34
-
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-
-              kotlinOptions {
-                  jvmTarget = '17'
-              }
-
-              defaultConfig {
-                  applicationId "com.judeadaiy.chat_app"
-                  minSdkVersion 23
-                  targetSdkVersion 34
-                  versionCode 1
-                  versionName "1.0.0"
-              }
-          }
-
-          // إجبار كل المكاتب الخارجية القديمة على التوافق مع قيم مشروعك
-          subprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      project.android {
-                          compileSdkVersion 34
-                          buildToolsVersion "34.0.0"
-                          defaultConfig {
-                              minSdkVersion 23
-                          }
-                      }
-                  }
-              }
-              project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                  kotlinOptions {
-                      jvmTarget = "17"
-                  }
-              }
-          }
-          EOF
-
-          # هـ. تنظيف وحقن ملف MainActivity.kt ليكون مطابقاً للحزمة والمسار الجديد تماماً
-          rm -rf android/app/src/main/kotlin
-          mkdir -p android/app/src/main/kotlin/com/judeadaiy/chat_app
-          cat << 'EOF' > android/app/src/main/kotlin/com/judeadaiy/chat_app/MainActivity.kt
-          package com.judeadaiy.chat_app
-
-          import io.flutter.embedding.android.FlutterActivity
-
-          class MainActivity: FlutterActivity() {
-          }
-          EOF
-
-      # 6. أمر البناء الصريح والنظيف والنهائي
+      # 6. تشغيل البناء الصافي (سيعتمد على الهيكل الأصلي والملفات الرسمية لفلاتر)
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
@@ -189,3 +62,4 @@ jobs:
         with:
           name: App-ChatApp-Release
           path: build/app/outputs/flutter-apk/app-release.apk
+
