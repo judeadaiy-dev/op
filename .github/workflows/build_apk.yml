@@ -14,13 +14,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تهيئة بيئة جافا الحديثة والمستقرة (JDK 17)
+      # 1. تهيئة بيئة جافا الحديثة (JDK 17) - تم إزالة الكاش لمنع توقف السيرفر عند غياب المجلد
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
       # 2. تثبيت محرك فلاتر المستقر بالإصدار 3.22.0
       - name: Set up Flutter
@@ -30,10 +29,11 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. إجبار فلاتر على توليد هيكل أندرويد نظيف ومتكامل من الصفر
-      - name: Auto-Generate Clean Android Structure
+      # 3. مسح الهيكل القديم وبناء هيكل أندرويد نظيف ومعياري 100% من الصفر
+      - name: Force Re-create Clean Android Structure
         run: |
           flutter config --no-analytics
+          rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
       # 4. حقن وتثبيت قيم الـ SDK الصريحة في ملف الخصائص لتقرأها كل المكتبات الفرعية
@@ -58,7 +58,7 @@ jobs:
             sed -i 's/kotlin("android") version .*/kotlin("android") version "1.9.24"/g' android/build.gradle
           fi
 
-          # تعديل قيم الـ SDK واسم الحزمة في ملف التطبيق الداخلي تلقائياً دون تدمير الهيكلية
+          # تعديل قيم الـ SDK واسم الحزمة في ملف التطبيق الداخلي تلقائياً دون تدمير الهيكلية المعيارية
           if [ -f android/app/build.gradle ]; then
             sed -i 's/minSdkVersion .*/minSdkVersion 23/g' android/app/build.gradle
             sed -i 's/targetSdkVersion .*/targetSdkVersion 34/g' android/app/build.gradle
