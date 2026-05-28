@@ -36,10 +36,10 @@ jobs:
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 4. التعديل الجذري وحقن الكود الكلاسيكي المتوافق مع المكاتب الفرعية لتعريف متغير flutter
+      # 4. التعديل الجذري وحقن الكود الكلاسيكي المتوافق مع المكاتب لتعريف متغير flutter
       - name: Patch Android Project For Plus Plugins Compatibility
         run: |
-          # 1. تحديث وإعادة صياغة ملف android/build.gradle بالكامل ليحتوي على التوزيعة الصحيحة للمكاتب
+          # تحديث وإعادة صياغة ملف android/build.gradle بالكامل ليحتوي على التوزيعة الصحيحة للمكاتب
           cat << 'EOF' > android/build.gradle
           buildscript {
               ext.kotlin_version = '1.9.24'
@@ -73,7 +73,7 @@ jobs:
           }
           EOF
 
-          # 2. إصلاح ملف settings.gradle ليتكامل مع البناء الكلاسيكي بدلاً من الـ DSL المقفل
+          # إصلاح ملف settings.gradle ليتكامل مع البناء الكلاسيكي بدلاً من الـ DSL المقفل
           cat << 'EOF' > android/settings.gradle
           include ':app'
 
@@ -106,7 +106,14 @@ jobs:
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
 
-      # 6. تعديل ملف التطبيق الداخلي لفرض التحديثات وتجنب التعارضات
+      # 6. تحديث إصدار الـ Gradle Wrapper تلقائياً لتخطي قيد إصدار 7.6.3 حل المشكلة الحالي
+      - name: Upgrade Gradle Wrapper Version
+        run: |
+          if [ -f android/gradle/wrapper/gradle-wrapper.properties ]; then
+            sed -i 's/gradle-.*-all.zip/gradle-8.2-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
+          fi
+
+      # 7. تعديل ملف التطبيق الداخلي لفرض التحديثات وتجنب التعارضات
       - name: Patch Application Configuration
         run: |
           if [ -f android/app/build.gradle ]; then
@@ -117,21 +124,22 @@ jobs:
             sed -i 's/namespace .*/namespace "com.judeadaiy.chat_app"/g' android/app/build.gradle
           fi
 
-      # 7. جلب المكتبات والحزم لتتطابق مع الهيكل المعياري الجديد
+      # 8. جلب المكتبات والحزم لتتطابق مع الهيكل المعياري الجديد
       - name: Install Dependencies
         run: |
           flutter pub get
 
-      # 8. البناء النهائي المستقر وتوليد ملف الـ APK
+      # 9. البناء النهائي المستقر وتوليد ملف الـ APK
       - name: Build APK Release
         run: |
           flutter build apk --release \
             --target-platform android-arm,android-arm64,android-x64 \
             --no-tree-shake-icons
 
-      # 9. رفع ملف الـ APK النهائي للتحميل مباشرة من الـ Artifacts
+      # 10. رفع ملف الـ APK النهائي للتحميل مباشرة من الـ Artifacts
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: App-Latest-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+
