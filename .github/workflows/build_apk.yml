@@ -33,13 +33,13 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. إصلاح وتوليد مجلد أندرويد حديث ونظيف كلياً يتوافق مع فلاتر 3.22
-      - name: Upgrade and Recreate Clean Android Structure
+      # 4. مسح المجلد القديم وتوليد هيكل أندرويد حديث ونظيف كلياً
+      - name: Recreate Clean Android Structure
         run: |
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. حقن مسار الـ SDK والإعدادات المطلوبة لحزمة الصوت
+      # 5. تأمين قيم الـ SDK المطلوبة في ملف الخصائص بالسيرفر لتقرأها الحزم تلقائياً
       - name: Configure Flutter SDK Path
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
@@ -47,19 +47,12 @@ jobs:
           echo "flutter.minSdkVersion=23" >> android/local.properties
           echo "flutter.targetSdkVersion=34" >> android/local.properties
 
-      # 6. تحديث الجرادل ليدعم الـ Sealed Classes بشكل نظامي ومتوافق
-      - name: Upgrade Gradle Wrapper
-        run: |
-          cd android
-          ./gradlew wrapper --gradle-version 8.2
-          cd ..
-
-      # 7. أمر البناء القياسي المباشر
+      # 6. أمر البناء الشامل والنظيف (بدون تشغيل الترقية اليدوية للجرادل التي كسرت البناء)
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 8. رفع ملف الـ APK النهائي للتحميل
+      # 7. رفع ملف الـ APK النهائي للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
