@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تهيئة بيئة الجافا المتوافقة مع ملفاتك
+      # 1. تهيئة بيئة الجافا الحديثة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -33,17 +33,33 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. خطوة تأمينية فقط: كتابة مسار الـ SDK داخل ملف local.properties المرفوع لتوجيه الجرادل
+      # 4. إصلاح وتوليد مجلد أندرويد حديث ونظيف كلياً يتوافق مع فلاتر 3.22
+      - name: Upgrade and Recreate Clean Android Structure
+        run: |
+          rm -rf android
+          flutter create . --platforms=android --org=com.judeadaiy
+
+      # 5. حقن مسار الـ SDK والإعدادات المطلوبة لحزمة الصوت
       - name: Configure Flutter SDK Path
         run: |
-          echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "flutter.compileSdkVersion=34" >> android/local.properties
+          echo "flutter.minSdkVersion=23" >> android/local.properties
+          echo "flutter.targetSdkVersion=34" >> android/local.properties
 
-      # 5. أمر البناء القياسي المباشر (سيعتمد 100% على مجلد android المرفوع في الصورة)
+      # 6. تحديث الجرادل ليدعم الـ Sealed Classes بشكل نظامي ومتوافق
+      - name: Upgrade Gradle Wrapper
+        run: |
+          cd android
+          ./gradlew wrapper --gradle-version 8.2
+          cd ..
+
+      # 7. أمر البناء القياسي المباشر
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 6. رفع ملف الـ APK النهائي للتحميل
+      # 8. رفع ملف الـ APK النهائي للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
