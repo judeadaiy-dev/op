@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. تأمين مسارات الموارد والخطوط لضمان دمجها
+      # 3. تأمين مسارات الموارد والخطوط
       - name: Secure Fonts and Assets Directory
         run: |
           mkdir -p assets/images
@@ -51,10 +51,9 @@ jobs:
       - name: Nuke Old Android Directory
         run: rm -rf android
 
-      # 5. التوليد الرسمي والنظيف للأندرويد الحديث بنظام الـ Plugins الجديد
+      # 5. التوليد الرسمي والنظيف للأندرويد الحديث
       - name: Core Flutter Android Generation
-        run: |
-          flutter create . --platforms android --org com.judeadaiy
+        run: flutter create . --platforms android --org com.judeadaiy
 
       # 6. تطهير كاش فلاتر وتحميل المكاتب المقفلة المستقرة
       - name: Purge Flutter Cache & Fresh Pub Get
@@ -66,12 +65,11 @@ jobs:
       - name: Run Launcher Icons Generator
         run: flutter pub run flutter_launcher_icons
 
-      # 8. 🚨 الضربة القاضية: بناء الـ APK مع إخبار فلاتر برسمية أن الـ min-sdk هو 23 لتخطي تعارض الـ Manifest
-      - name: Build APK Release with Modern SDK Target
-        run: |
-          flutter build apk --release --no-tree-shake-icons --min-sdk=23 --target-platform android-arm,android-arm64,android-x64
+      # 8. البناء الرسمي والمباشر للـ APK
+      - name: Build APK Release
+        run: flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
           
-      # 9. رفع ملف الـ APK النهائي النظيف تماماً
+      # 9. رفع ملف الـ APK النهائي
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
