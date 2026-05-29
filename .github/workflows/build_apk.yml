@@ -1,4 +1,4 @@
-name: Pure UI Build Bypass
+name: Ultimate UI APK Generator
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. تأمين مسارات الموارد
+      # 3. تأمين مسارات الموارد واللوقو لمنع توقف الـ pubspec
       - name: Secure Assets and Icon
         run: |
           mkdir -p assets/images
@@ -37,14 +37,14 @@ jobs:
             touch assets/images/app_logo.png
           fi
 
-      # 4. تدمير المجلد القديم وتوليد بنية نظيفة تتوافق مع الـ UI فقط
-      - name: Nuke Android & Regenerate for UI Test
+      # 4. 🚨 تدمير المجلد القديم بالكامل وإجبار فلاتر على توليد بنية أندرويد جديدة ونظيفة 100%
+      - name: Hard Nuke Old Android & Regenerate Structure
         run: |
           rm -rf android
           flutter create . --platforms android
           flutter pub get
 
-      # 5. ربط الـ SDK بالأندرويد الجديد
+      # 5. ربط الـ SDK بالأندرويد المولد حديثاً وحقن قيم البناء الصحيحة
       - name: Configure Android SDK & Gradle Bridge
         run: |
           cat << 'EOF' > android/local.properties
@@ -55,12 +55,12 @@ jobs:
           flutter.targetSdkVersion=34
           EOF
 
-      # 6. البناء السريع والصارم للـ APK
+      # 6. أمر البناء النهائي الصارم لإنتاج الـ APK
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 7. استخراج التطبيق الجاهز للتثبيت ورؤية الواجهات
+      # 7. استخراج وتجهيز ملف الـ APK المباشر للتحميل والتثبيت
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
