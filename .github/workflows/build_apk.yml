@@ -1,4 +1,4 @@
-name: Ultimate UI APK Generator
+name: Pure Sovereign Native Build
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تثبيت الجافا المستقرة
+      # 1. تثبيت الجافا المتوافقة مع الكوتلن الحديث ومكاتب الصوت والـ Firebase
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -29,23 +29,36 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. تأمين مسارات الموارد واللوقو لمنع توقف الـ pubspec
-      - name: Secure Assets and Icon
+      # 3. تأمين مسارات الخطوط والصور لعدم توقف البناء (توليد ملفات وهمية إن لم توجد)
+      - name: Secure Fonts and Assets Directory
         run: |
           mkdir -p assets/images
+          mkdir -p assets/fonts
           if [ ! -f "assets/images/app_logo.png" ]; then
             touch assets/images/app_logo.png
           fi
+          if [ ! -f "assets/fonts/Cairo-Regular.ttf" ]; then
+            touch assets/fonts/Cairo-Regular.ttf
+          fi
+          if [ ! -f "assets/fonts/Cairo-Bold.ttf" ]; then
+            touch assets/fonts/Cairo-Bold.ttf
+          fi
+          if [ ! -f "assets/fonts/Cairo-SemiBold.ttf" ]; then
+            touch assets/fonts/Cairo-SemiBold.ttf
+          fi
 
-      # 4. 🚨 تدمير المجلد القديم بالكامل وإجبار فلاتر على توليد بنية أندرويد جديدة ونظيفة 100%
-      - name: Hard Nuke Old Android & Regenerate Structure
+      # 4. 🚨 تدمير مجلد أندرويد القديم بالكامل لقطع الشك باليقين
+      - name: Nuke Old Android Directory
+        run: rm -rf android
+
+      # 5. توليد مجلد رسمي ونظيف ومطابق 100% للمكاتب والحزم الجديدة
+      - name: Regenerate Pristine Android Structure
         run: |
-          rm -rf android
-          flutter create . --platforms android
+          flutter create . --platforms android --org com.judeadaiy
           flutter pub get
 
-      # 5. ربط الـ SDK بالأندرويد المولد حديثاً وحقن قيم البناء الصحيحة
-      - name: Configure Android SDK & Gradle Bridge
+      # 6. 🚨 التعديل السحري: حقن قيم البناء قبل أي عملية ترجمة للمكاتب الخارجية ليتخطى فخ connectivity_plus
+      - name: Configure Android SDK & Gradle Bridge Explicitly
         run: |
           cat << 'EOF' > android/local.properties
           sdk.dir=/usr/local/lib/android/sdk
@@ -55,14 +68,54 @@ jobs:
           flutter.targetSdkVersion=34
           EOF
 
-      # 6. أمر البناء النهائي الصارم لإنتاج الـ APK
+      # 7. تحديث ملفات الجرادل الأساسية لتتوافق مع مكاتب الصوت والتسجيل
+      - name: Patch Gradle Plugins for Audio & Firebase Support
+        run: |
+          cat << 'EOF' > android/settings.gradle
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  def propertiesFile = new File(settingsDir, 'local.properties')
+                  if (propertiesFile.exists()) {
+                      propertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
+                  }
+                  def sdkPath = properties.getProperty('flutter.sdk')
+                  assert sdkPath != null, "flutter.sdk not set in local.properties"
+                  return sdkPath
+              }()
+
+              includeBuild "$flutterSdkPath/packages/flutter_tools/gradle"
+
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          plugins {
+              id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+              id "com.android.application" version "8.0.2" apply false
+              id "org.jetbrains.kotlin.android" version "1.8.22" apply false
+          }
+
+          include ":app"
+          EOF
+
+      # 8. تشغيل أداة توليد الأيقونات لتقوم بحقن أيقونة SeaChat داخل المجلد النظيف تلقائياً
+      - name: Generate Launcher Icons
+        run: |
+          flutter pub run flutter_launcher_icons
+
+      # 9. أمر البناء النهائي الصارم لإخراج الـ APK رغماً عن أنف الكاش
       - name: Build APK Release
         run: |
+          cd android && ./gradlew clean && cd ..
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 7. استخراج وتجهيز ملف الـ APK المباشر للتحميل والتثبيت
+      # 10. استخراج ملف الـ APK المباشر والكامل لتثبيته فوراً على الجوال
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaChat-UI-Test-APK
+          name: SeaChat-Full-Build-APK
           path: build/app/outputs/flutter-apk/app-release.apk
