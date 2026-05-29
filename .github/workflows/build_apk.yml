@@ -51,7 +51,7 @@ jobs:
       - name: Nuke Old Android Directory
         run: rm -rf android
 
-      # 5. التوليد الرسمي والنظيف لمجلد الأندرويد الحديث
+      # 5. Tالتوليد الرسمي والنظيف لمجلد الأندرويد الحديث
       - name: Core Flutter Android Generation
         run: flutter create . --platforms android --org com.judeadaiy
 
@@ -61,15 +61,43 @@ jobs:
           flutter pub cache clean -f
           flutter pub get
 
-      # 7. 🚨 الحل الرسمي والنظيف: تمرير إصدارات الـ SDK المتوافقة عبر قيم البيئة الرسمية للأندرويد
-      - name: Inject Target SDK Configuration
+      # 7. 🚨 الحل الهندسي النظيف: حقن ملف build.gradle رسمي وثابت يفرض minSdkVersion 23 بدون ترقيع نصوص
+      - name: Blueprint App Build Gradle
         run: |
-          cat << 'EOF' > android/local.properties
-          sdk.dir=/usr/local/lib/android/sdk
-          flutter.sdk=/opt/hostedtoolcache/flutter/stable-3.22.0-x64/flutter
-          flutter.compileSdkVersion=34
-          flutter.minSdkVersion=23
-          flutter.targetSdkVersion=34
+          cat << 'EOF' > android/app/build.gradle
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          android {
+              namespace "com.judeadaiy.op"
+              compileSdk = 34
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+
+              defaultConfig {
+                  applicationId "com.judeadaiy.op"
+                  minSdk = 23
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0.0"
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig = signingConfigs.debug
+                  }
+              }
+          }
           EOF
 
       # 8. تشغيل أداة الأيقونات لتوليد أيقونة الأندرويد الرسمية
@@ -78,7 +106,9 @@ jobs:
 
       # 9. البناء الرسمي والمباشر للـ APK
       - name: Build APK Release
-        run: flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
+        run: |
+          cd android && ./gradlew clean && cd ..
+          flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
           
       # 10. رفع ملف الـ APK النهائي للتحميل المباشر
       - name: Upload APK Artifact
