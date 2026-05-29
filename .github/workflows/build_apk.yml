@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تهيئة بيئة الجافا المتوافقة مع جرادل 8
+      # 1. تهيئة بيئة الجافا المستقرة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -29,31 +29,70 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. تزويد السيرفر بنسخة الجرادل 8.0 المطلوبة رسمياً لتطبيقك
-      - name: Configure Gradle Wrapper Version
-        run: |
-          mkdir -p android/gradle/wrapper
-          cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
-          EOF
-
-      # 4. جلب الحزم وتنظيف المشروع
+      # 3. جلب الحزم وتأمين الـ pubspec
       - name: Install Dependencies
         run: |
           flutter pub get
           flutter clean
           flutter pub get
 
-      # 5. أمر البناء الصافي والنهائي
+      # 4. خطوة الإنقاذ: كتابة ملف AndroidManifest.xml قياسي وسليم 100% داخل السيرفر
+      - name: Fix Android Manifest File
+        run: |
+          mkdir -p android/app/src/main
+          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.judeadaiy.chat_app">
+
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO" />
+              <uses-permission android:name="android.permission.CAMERA" />
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+              <application
+                  android:label="chat_app"
+                  android:name="${applicationName}"
+                  android:icon="@mipmap/ic_launcher">
+                  
+                  <meta-data
+                      android:name="flutterEmbedding"
+                      android:value="2" />
+                      
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|density|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      
+                      <meta-data
+                          android:name="io.flutter.embedding.android.NormalTheme"
+                          android:resource="@style/NormalTheme" />
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+      # 5. تفعيل دعم AndroidX لضمان عمل مكتبات الصوت الحديثة
+      - name: Ensure AndroidX Properties
+        run: |
+          echo "android.useAndroidX=true" > android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+
+      # 6. أمر البناء النهائي والمباشر
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 6. رفع ملف الـ APK للتحميل
+      # 7. رفع ملف الـ APK الناتج للتحميل فوراً
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
