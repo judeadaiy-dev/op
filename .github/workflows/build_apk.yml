@@ -1,4 +1,4 @@
-name: The Manual-Driven Decisive Build
+name: Fixed Native Bridge Build
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تثبيت بيئة الجافا المستقرة المتوافقة مع تعديلاتك يدوياً
+      # 1. تثبيت الجافا المتوافقة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -29,16 +29,24 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. جلب كافة حزم ومكتبات تطبيق الشات والـ Firebase
+      # 3. جلب مكاتب تطبيق الشات والصوت
       - name: Install Dependencies
         run: |
           flutter pub get
           flutter clean
           flutter pub get
 
-      # 4. ترقية الجرادل تلقائياً إلى 8.0 ليتوافق مع تعديلات الـ SDK 34 اليدوية التي وضعتها
-      - name: Inject Gradle 8.0 Wrapper
+      # 4. بناء جسر الـ SDK والجرادل ليرتبط بملف الـ settings.gradle الجديد
+      - name: Configure Android SDK & Gradle Bridge
         run: |
+          cat << 'EOF' > android/local.properties
+          sdk.dir=/usr/local/lib/android/sdk
+          flutter.sdk=/opt/hostedtoolcache/flutter/stable-3.22.0-x64/flutter
+          flutter.compileSdkVersion=34
+          flutter.minSdkVersion=23
+          flutter.targetSdkVersion=34
+          EOF
+          
           mkdir -p android/gradle/wrapper
           cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
@@ -48,23 +56,14 @@ jobs:
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
           EOF
 
-      # 5. ربط محرك فلاتر بملف الـ local.properties الخاص بالسيرفر دون لمس بقية الإعدادات
-      - name: Configure Android SDK Path for Server
-        run: |
-          cat << 'EOF' > android/local.properties
-          sdk.dir=/usr/local/lib/android/sdk
-          flutter.sdk=/opt/hostedtoolcache/flutter/stable-3.22.0-x64/flutter
-          EOF
-
-      # 6. جعل فلاتر يقوم ببناء وتوليد وتكملة المجلد اعتماداً على ملفاتك اليدوية الثابتة
+      # 5. أمر البناء المباشر
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 7. استخراج ورفع الـ APK النهائي الجاهز للتشغيل والتثبيت
+      # 6. رفع الـ APK الجاهز تماماً للتثبيت
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SeaChat-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
-
