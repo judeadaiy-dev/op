@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تثبيت بيئة الجافا (JDK 17)
+      # 1. تثبيت بيئة الجافا المتوافقة مع جرادل 8
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. تأمين مسارات الموارد والخطوط لمنع توقف البناء في السيرفر
+      # 3. تأمين مسارات الموارد والخطوط لمنع توقف البناء
       - name: Secure Fonts and Assets Directory
         run: |
           mkdir -p assets/images
@@ -47,17 +47,42 @@ jobs:
             touch assets/fonts/Cairo-SemiBold.ttf
           fi
 
-      # 4. تدمير مجلد أندرويد القديم بالكامل لقطع أي تضارب كاش سابق
+      # 4. تدمير مجلد أندرويد القديم بالكامل لقطع الشك باليقين
       - name: Nuke Old Android Directory
         run: rm -rf android
 
-      # 5. توليد مجلد أندرويد رسمي ونظيف ومطابق 100% للمكاتب والحزم الحالية
+      # 5. توليد مجلد أندرويد رسمي ونظيف بالـ Package Name المطابق لمستودعك الحالي
       - name: Regenerate Pristine Android Structure
         run: |
           flutter create . --platforms android --org com.judeadaiy
           flutter pub get
 
-      # 6. حقن قيم البناء والـ SDK الصارمة للأندرويد
+      # 6. 🚨 حل مشكلة الجرادل: فرض تحديث الـ Gradle Wrapper إلى إصدار 8.0 الحديث تلقائياً
+      - name: Force Upgrade Gradle Wrapper to 8.0
+        run: |
+          mkdir -p android/gradle/wrapper
+          cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
+          EOF
+
+      # 7. 🚨 حل مشكلة الكوتلن: فرض إعادة كتابة ملف الـ MainActivity بالمسار الصحيح للمشروع الحالي لتخطي خطأ الـ Unresolved reference
+      - name: Force Overwrite MainActivity with Correct Package
+        run: |
+          mkdir -p android/app/src/main/kotlin/com/judeadaiy/op
+          cat << 'EOF' > android/app/src/main/kotlin/com/judeadaiy/op/MainActivity.kt
+          package com.judeadaiy.op
+
+          import io.flutter.embedding.android.FlutterActivity
+
+          class MainActivity: FlutterActivity() {
+          }
+          EOF
+
+      # 8. حقن قيم البناء والـ SDK الصارمة للأندرويد
       - name: Configure Android SDK & Gradle Bridge Explicitly
         run: |
           cat << 'EOF' > android/local.properties
@@ -68,7 +93,7 @@ jobs:
           flutter.targetSdkVersion=34
           EOF
 
-      # 7. تحديث ملفات الـ Gradle الأساسية لتتوافق مع مكاتب الصوت والـ Firebase
+      # 9. تحديث ملفات الـ Gradle الأساسية لتتوافق مع مكاتب الصوت والـ Firebase وجرادل 8
       - name: Patch Gradle Plugins for Audio & Firebase Support
         run: |
           cat << 'EOF' > android/settings.gradle
@@ -102,19 +127,20 @@ jobs:
           include ":app"
           EOF
 
-      # 8. 🎯 تشغيل أداة الأيقونات للأندرويد بنجاح كامل بدون توقف أو بكاء على الآيفون
+      # 10. تشغيل أداة الأيقونات للأندرويد بنجاح كامل بدون توقف
       - name: Run Launcher Icons Generator
         run: flutter pub run flutter_launcher_icons
 
-      # 9. أمر البناء النهائي الصارم لإخراج الـ APK الكامل بالفُل ميزات والـ UI
+      # 11. أمر البناء النهائي القاطع لإخراج الـ APK الكامل بالفُل ميزات والـ UI
       - name: Build APK Release
         run: |
           cd android && ./gradlew clean && cd ..
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 10. استخراج ملف الـ APK المباشر وتجهيزه للتحميل الفوري
+      # 12. استخراج ملف الـ APK المباشر وتجهيزه للتحميل الفوري
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SeaChat-Full-Build-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+
