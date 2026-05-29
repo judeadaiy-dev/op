@@ -1,4 +1,4 @@
-name: Ultimate Pristine Android Build
+name: Pure Official Android Build
 
 on:
   push:
@@ -14,14 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تثبيت بيئة الجافا المستقرة (JDK 17) المطلوبة لأندرويد الحديث
+      # 1. تثبيت الجافا المستقرة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. تهيئة محرك فلاتر المستقر في السيرفر
+      # 2. تهيئة محرك فلاتر المستقر (تعطيل الكاش هنا لضمان عدم سحب المكاتب المعطوبة)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. تأمين مسارات الموارد والخطوط لضمان دمجها داخل الـ APK بنجاح
+      # 3. تأمين مسارات الموارد والخطوط لضمان دمجها
       - name: Secure Fonts and Assets Directory
         run: |
           mkdir -p assets/images
@@ -47,28 +47,33 @@ jobs:
             touch assets/fonts/Cairo-SemiBold.ttf
           fi
 
-      # 4. تدمير مجلد أندرويد القديم المرفوع من الهاتف بالكامل لضمان عدم وجود ملفات معطوبة
+      # 4. مسح المجلد القديم التالف تماماً
       - name: Nuke Old Android Directory
         run: rm -rf android
 
-      # 5. التوليد الرسمي: نأمر فلاتر بخلق بيئة أندرويد كاملة وجديدة متوافقة مع مكاتبك
-      # سيقوم فلاتر بضبط الـ Namespace والـ Gradle والـ MainActivity تلقائياً وبأعلى كفاءة رسمية
+      # 5. التوليد الرسمي والنظيف للأندرويد الحديث بنظام الـ Plugins الجديد
       - name: Core Flutter Android Generation
         run: |
           flutter create . --platforms android --org com.judeadaiy
+          
+      # 6. 🚨 الحل الهندسي: تطهير كاش فلاتر وتحميل مكاتب نقية ومحدثة 100%
+      - name: Purge Flutter Cache & Fresh Pub Get
+        run: |
+          flutter pub cache clean -f
           flutter pub get
 
-      # 6. تشغيل أداة الأيقونات (ستقرأ ملف الـ pubspec النظيف للأندرويد وتعمل فوراً)
+      # 7. تشغيل أداة الأيقونات لتوليد أيقونة الأندرويد الرسمية
       - name: Run Launcher Icons Generator
         run: flutter pub run flutter_launcher_icons
 
-      # 7. البناء الصافي والمباشر دون أي تعديل أو عبث خارجي بالأكواد
+      # 8. 🚨 البناء الاحترافي الصارم: حصر التجميع لمنصة الأندرويد وتخطي تجميع مكاتب الويب واللينكس الوهمية
       - name: Build APK Release
-        run: flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
-
-      # 8. استخراج الـ APK النهائي الكامل لتقوم بتحميله على جوالك
+        run: |
+          flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
+          
+      # 9. رفع ملف الـ APK النهائي النظيف تماماً
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaChat-Official-Build
+          name: SeaChat-Modern-Build
           path: build/app/outputs/flutter-apk/app-release.apk
