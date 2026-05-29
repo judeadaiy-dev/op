@@ -82,8 +82,8 @@ jobs:
           }
           EOF
 
-      # 8. 🚨 الضربة القاضية: توحيد إعدادات الـ JVM وإصدارات الجافا لمنع تضارب الـ JavaWithJavac
-      - name: Patch app build.gradle for JVM 17 Compatibility
+      # 8. 🚨 التعديل الـجوهري: حقن ملف build.gradle مع سطر الـ dependencies الأصلي لفلاتر لمنع الـ Unresolved reference
+      - name: Patch app build.gradle with Flutter Blueprint
         run: |
           cat << 'EOF' > android/app/build.gradle
           plugins {
@@ -118,6 +118,11 @@ jobs:
                       signingConfig = signingConfigs.debug
                   }
               }
+          }
+
+          // الجسر الحاسم لربط الكوتلن بمكتبات محرك فلاتر الناتيف داخل السيرفر
+          dependencies {
+              implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
           }
           EOF
 
