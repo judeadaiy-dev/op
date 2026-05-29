@@ -15,10 +15,10 @@ dependencies:
   # State Management
   provider: ^6.1.2
 
-  # Backend - تم التحديث لإصدار مستقر يدعم الهيكلية الحديثة
+  # Backend
   supabase_flutter: ^2.6.0
   
-  # Firebase - تحديث شامل لإصدارات متوافقة 100% مع أندرويد 14 وفلاتر الجديد
+  # Firebase - للإشعارات Push Notifications
   firebase_core: ^3.0.0
   firebase_messaging: ^15.0.0
   flutter_local_notifications: ^17.0.0
@@ -37,18 +37,18 @@ dependencies:
   timeago: ^3.6.1
   uuid: ^4.3.3
   
-  # Permissions - المايك، الكاميرا، والتخزين بأذونات الأندرويد الحديثة
+  # Permissions - للمايك والكاميرا والتخزين
   permission_handler: ^11.3.0
   
-  # Audio Recording & Player - نسخ مستقرة تمنع تضارب الـ Embedding في الكوتلن
-  record: ^5.1.2
-  just_audio: ^0.9.38
+  # 🚨 تثبيت النسخة المستقرة والمضمونة لمنع خطأ الـ record_linux
+  record: 5.0.5
+  just_audio: ^0.9.36
   
   # File Picker & Path
-  file_picker: ^8.0.0
-  path_provider: ^2.1.3
+  file_picker: ^6.1.1
+  path_provider: ^2.1.2
   
-  # Connectivity - النسخة الذهبية الحديثة التي حلت مشكلة الـ compileSdkVersion تماماً
+  # Connectivity
   connectivity_plus: ^6.0.3
 
 dev_dependencies:
@@ -56,10 +56,10 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
   
-  # توليد الأيقونة بمقاسات الأندرويد الحديثة
+  # توليد الأيقونة بكل المقاسات
   flutter_launcher_icons: ^0.14.0
 
-# إعدادات الأيقونة الخاصة بك للأندرويد فقط وحذف الـ ios تماماً لمنع أي تداخل
+# إعدادات الأيقونة للأندرويد فقط وحذف الـ ios تماماً
 flutter_launcher_icons:
   android: "launcher_icon"
   image_path: "assets/images/app_logo.png"
