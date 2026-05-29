@@ -102,18 +102,23 @@ jobs:
           include ":app"
           EOF
 
-      # 8. 🚨 تشغيل الأداة للأندرويد فقط لمنع انهيار الـ iOS المفقود
-      - name: Generate Launcher Icons for Android Only
+      # 8. 🚨 الخدعة الكبرى: صناعة مسار آيفون وهمي لخداع أداة الأيقونات وتخطي خطأ الـ PathNotFound
+      - name: Trick Launcher Icons Tool with Fake iOS Directory
         run: |
-          flutter pub run flutter_launcher_icons -f pubspec.yaml
+          mkdir -p ios/Runner/Assets.xcassets/AppIcon.appiconset
+          touch ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png
 
-      # 9. أمر البناء النهائي الصارم لإخراج الـ APK
+      # 9. تشغيل أداة الأيقونات الآن (ستجد الملف الوهمي وتعبر بسلام)
+      - name: Run Launcher Icons Generator
+        run: flutter pub run flutter_launcher_icons
+
+      # 10. أمر البناء النهائي الصارم لإخراج الـ APK الكامل بالفُل ميزات
       - name: Build APK Release
         run: |
           cd android && ./gradlew clean && cd ..
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 10. استخراج ملف الـ APK المباشر والكامل لتثبيته فوراً على الجوال
+      # 11. استخراج ملف الـ APK المباشر والكامل لتثبيته فوراً على الجوال
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
