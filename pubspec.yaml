@@ -40,7 +40,7 @@ dependencies:
   # Permissions - للمايك والكاميرا والتخزين
   permission_handler: any
   
-  # Audio Recording - تم جعلها مرنة لحل مشكلة الـ embedding
+  # Audio Recording
   record: any
   
   # Audio Player - تشغيل الرسائل الصوتية
@@ -63,24 +63,22 @@ dev_dependencies:
   # توليد الأيقونة بكل المقاسات
   flutter_launcher_icons: ^0.14.0
 
-# إعدادات الأيقونة الخاصة بك حصراً
+# تم تنظيف الإعدادات لتعمل على الأندرويد فقط وحذف الـ ios تماماً
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: true
   image_path: "assets/images/app_logo.png"
   min_sdk_android: 23
-  remove_alpha_ios: true
   adaptive_icon_background: "#1E88E5"
   adaptive_icon_foreground: "assets/images/app_logo.png"
 
 flutter:
   uses-material-design: true
 
-  # تم تصحيح مسار الصور ليتعرف عليه السيرفر مباشرة بدون أخطاء تداخل
+  # مسار الصور
   assets:
     - assets/images/app_logo.png
 
-  # تم تصحيح مسارات الخطوط لضمان دمجها داخل الـ APK بنجاح
+  # مسارات الخطوط لضمان دمجها داخل الـ APK بنجاح
   fonts:
     - family: Cairo
       fonts:
