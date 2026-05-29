@@ -29,14 +29,19 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. جلب الحزم وتأمين الـ pubspec
-      - name: Install Dependencies
+      # 3. حل مشكلة السجل (توليد ملف gradle-wrapper.properties المفقود وإعطائه إصدار 8.0)
+      - name: Force Generate Gradle Wrapper
         run: |
-          flutter pub get
-          flutter clean
-          flutter pub get
+          mkdir -p android/gradle/wrapper
+          cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
+          EOF
 
-      # 4. خطوة الإنقاذ: كتابة ملف AndroidManifest.xml قياسي وسليم 100% داخل السيرفر
+      # 4. إصلاح ملف AndroidManifest.xml المكسور وحقنه بالصيغة الصحيحة 100%
       - name: Fix Android Manifest File
         run: |
           mkdir -p android/app/src/main
@@ -81,18 +86,33 @@ jobs:
           </manifest>
           EOF
 
-      # 5. تفعيل دعم AndroidX لضمان عمل مكتبات الصوت الحديثة
+      # 5. تفعيل دعم AndroidX لضمان تشغيل مكتبات الصوت بسلاسة
       - name: Ensure AndroidX Properties
         run: |
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-      # 6. أمر البناء النهائي والمباشر
+      # 6. تهيئة ملف الخصائص وإصدارات الـ SDK
+      - name: Configure Android SDK Scale
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "flutter.compileSdkVersion=34" >> android/local.properties
+          echo "flutter.minSdkVersion=23" >> android/local.properties
+          echo "flutter.targetSdkVersion=34" >> android/local.properties
+
+      # 7. جلب الحزم وتنظيف المشروع قبل البناء
+      - name: Install Dependencies
+        run: |
+          flutter pub get
+          flutter clean
+          flutter pub get
+
+      # 8. أمر البناء النهائي الصافي
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 7. رفع ملف الـ APK الناتج للتحميل فوراً
+      # 9. رفع ملف الـ APK الناتج للتحميل فوراً
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
