@@ -47,11 +47,11 @@ jobs:
             touch assets/fonts/Cairo-SemiBold.ttf
           fi
 
-      # 4. مسح المجلد القديم بالكامل للتخلص من أي تداخل في المسارات
-      - name: Nuke Old Android Directory
+      # 4. 🚨 تدمير مجلد الأندرويد القديم بشكل كامل ونهائي لمنع دمج الملفات التالفة
+      - name: Total Wipe Out Old Android
         run: rm -rf android
 
-      # 5. 🚨 التوليد الذكي والصافي: تحديد الـ org ليكون com.judeadaiy فقط لمنع تكرار المجلدات (op/op)
+      # 5. التوليد الرسمي لمجلد أندرويد ناصع البياض
       - name: Core Flutter Android Generation
         run: flutter create . --platforms android --org com.judeadaiy
 
@@ -97,7 +97,7 @@ jobs:
           include ":app"
           EOF
 
-      # 8. 🚨 تحديث الـ build.gradle ليتطابق مع هيكل الـ Package النظيف الجديد تماماً
+      # 8. تحديث الـ build.gradle ليتطابق مع هيكل الـ Package النظيف الجديد تماماً ويفرض minSdk 23
       - name: Blueprint App Build Gradle
         run: |
           cat << 'EOF' > android/app/build.gradle
@@ -147,16 +147,30 @@ jobs:
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
           EOF
 
-      # 10. تشغيل أداة الأيقونات لتوليد أيقونة الأندرويد الرسمية للمشروع النظيف
+      # 10. 🚨 الضربة القاضية: تدمير أي تداخل مسارات قديم وحقن ملف MainActivity صلب ومتطابق 100%
+      - name: Inject Absolute Clean MainActivity
+        run: |
+          rm -rf android/app/src/main/kotlin/com/judeadaiy/op
+          mkdir -p android/app/src/main/kotlin/com/judeadaiy/chat_app
+          cat << 'EOF' > android/app/src/main/kotlin/com/judeadaiy/chat_app/MainActivity.kt
+          package com.judeadaiy.chat_app
+
+          import io.flutter.embedding.android.FlutterActivity
+
+          class MainActivity: FlutterActivity() {
+          }
+          EOF
+
+      # 11. تشغيل أداة الأيقونات لتوليد أيقونة الأندرويد الرسمية
       - name: Run Launcher Icons Generator
         run: flutter pub run flutter_launcher_icons
 
-      # 11. البناء الرسمي والمباشر للـ APK الصافي من الصفر
+      # 12. البناء الرسمي والمباشر للـ APK الصافي
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
           
-      # 12. رفع ملف الـ APK النهائي النظيف تماماً
+      # 13. رفع ملف الـ APK النهائي النظيف للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
