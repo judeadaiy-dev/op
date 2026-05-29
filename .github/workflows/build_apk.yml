@@ -1,4 +1,4 @@
-name: The Final Decisive Build (Chat App)
+name: The Final Absolute Decisive Build
 
 on:
   push:
@@ -104,7 +104,7 @@ jobs:
           }
           EOF
 
-      # 8. حقن ملف التطبيق الداخلي المتوافق مع الإصدار 8.0 ومع اسم الحزمة الصحيح
+      # 8. حقن ملف التطبيق الداخلي وضبط الـ namespace والـ applicationId تلقائياً ليتوافق مع الـ Package المولد
       - name: Inject App build.gradle
         run: |
           cat << 'EOF' > android/app/build.gradle
@@ -155,10 +155,16 @@ jobs:
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-      # 11. حقن ملف MainActivity.kt في مساره البرمجي الصحيح تماماً لاسم حزمتك
-      - name: Fix and Inject MainActivity Kotlin File
+      # 11. الضربة القاضية الذكية: مسح كافة ملفات الكوتلن المتعارضة وإعادة كتابة الملف الصحيح في مكانه الفعلي تلقائياً
+      - name: Smart Fix For Kotlin Duplications
         run: |
+          # مسح كامل لمجلد الكوتلن القديم لتنظيف التعارض تماماً
+          rm -rf android/app/src/main/kotlin
+          
+          # إنشاء المسار الموحد المعتمد داخل التطبيق
           mkdir -p android/app/src/main/kotlin/com/judeadaiy/chat_app
+          
+          # كتابة ملف كوتلن قياسي ونظيف وموجه بشكل صحيح
           cat << 'EOF' > android/app/src/main/kotlin/com/judeadaiy/chat_app/MainActivity.kt
           package com.judeadaiy.chat_app
 
@@ -168,7 +174,7 @@ jobs:
           }
           EOF
 
-      # 12. إصلاح المانيفست بالصلاحيات الكاملة لتطبيق الشات والاسم التجاري SeaChat
+      # 12. إصلاح المانيفست بالصلاحيات الكاملة لتطبيق الشات ومطابقة اسم الحزمة com.judeadaiy.chat_app
       - name: Fix Android Manifest File
         run: |
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
@@ -187,7 +193,7 @@ jobs:
                       android:name="flutterEmbedding"
                       android:value="2" />
                   <activity
-                      android:name=".MainActivity"
+                      android:name="com.judeadaiy.chat_app.MainActivity"
                       android:exported="true"
                       android:launchMode="singleTop"
                       android:theme="@style/LaunchTheme"
@@ -211,9 +217,10 @@ jobs:
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 14. رفع الجوهرة للتحميل المباشر بمسارها الصحيح للمشروع الحالي
+      # 14. رفع الجوهرة للتحميل المباشر بمسارها الصحيح
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SeaChat-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+
