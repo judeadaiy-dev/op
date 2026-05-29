@@ -1,4 +1,4 @@
-name: Pure Sovereign Android Build
+name: Ultimate Pristine Android Build
 
 on:
   push:
@@ -14,14 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تثبيت بيئة الجافا المتوافقة
+      # 1. تثبيت بيئة الجافا المستقرة (JDK 17) المطلوبة لأندرويد الحديث
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. تهيئة محرك فلاتر المستقر
+      # 2. تهيئة محرك فلاتر المستقر في السيرفر
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. تأمين مسارات الموارد والخطوط لمنع توقف البناء
+      # 3. تأمين مسارات الموارد والخطوط لضمان دمجها داخل الـ APK بنجاح
       - name: Secure Fonts and Assets Directory
         run: |
           mkdir -p assets/images
@@ -47,144 +47,28 @@ jobs:
             touch assets/fonts/Cairo-SemiBold.ttf
           fi
 
-      # 4. تدمير مجلد أندرويد القديم بالكامل لقطع الشك باليقين
+      # 4. تدمير مجلد أندرويد القديم المرفوع من الهاتف بالكامل لضمان عدم وجود ملفات معطوبة
       - name: Nuke Old Android Directory
         run: rm -rf android
 
-      # 5. توليد مجلد أندرويد رسمي ونظيف بالـ Package Name المطابق لمستودعك
-      - name: Regenerate Pristine Android Structure
+      # 5. التوليد الرسمي: نأمر فلاتر بخلق بيئة أندرويد كاملة وجديدة متوافقة مع مكاتبك
+      # سيقوم فلاتر بضبط الـ Namespace والـ Gradle والـ MainActivity تلقائياً وبأعلى كفاءة رسمية
+      - name: Core Flutter Android Generation
         run: |
           flutter create . --platforms android --org com.judeadaiy
           flutter pub get
 
-      # 6. حل مشكلة الجرادل: فرض تحديث الـ Gradle Wrapper إلى إصدار 8.0 الحديث
-      - name: Force Upgrade Gradle Wrapper to 8.0
-        run: |
-          mkdir -p android/gradle/wrapper
-          cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
-          EOF
-
-      # 7. حل مشكلة الكوتلن والمسارات ليتعرف على الـ Activity فوراً
-      - name: Force Overwrite MainActivity with Correct Package
-        run: |
-          mkdir -p android/app/src/main/kotlin/com/judeadaiy/op
-          cat << 'EOF' > android/app/src/main/kotlin/com/judeadaiy/op/MainActivity.kt
-          package com.judeadaiy.op
-
-          import io.flutter.embedding.android.FlutterActivity
-
-          class MainActivity: FlutterActivity() {
-          }
-          EOF
-
-      # 8. 🚨 التعديل الـجوهري: حقن ملف build.gradle مع سطر الـ dependencies الأصلي لفلاتر لمنع الـ Unresolved reference
-      - name: Patch app build.gradle with Flutter Blueprint
-        run: |
-          cat << 'EOF' > android/app/build.gradle
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-
-          android {
-              namespace "com.judeadaiy.op"
-              compileSdk = 34
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-
-              defaultConfig {
-                  applicationId "com.judeadaiy.op"
-                  minSdk = 23
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0.0"
-              }
-
-              buildTypes {
-                  release {
-                      signingConfig = signingConfigs.debug
-                  }
-              }
-          }
-
-          // الجسر الحاسم لربط الكوتلن بمكتبات محرك فلاتر الناتيف داخل السيرفر
-          dependencies {
-              implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
-          }
-          EOF
-
-      # 9. حقن قيم البناء والـ SDK الصارمة للأندرويد
-      - name: Configure Android SDK & Gradle Bridge Explicitly
-        run: |
-          cat << 'EOF' > android/local.properties
-          sdk.dir=/usr/local/lib/android/sdk
-          flutter.sdk=/opt/hostedtoolcache/flutter/stable-3.22.0-x64/flutter
-          flutter.compileSdkVersion=34
-          flutter.minSdkVersion=23
-          flutter.targetSdkVersion=34
-          EOF
-
-      # 10. تحديث ملفات الـ Gradle الأساسية
-      - name: Patch Gradle Plugins for Audio & Firebase Support
-        run: |
-          cat << 'EOF' > android/settings.gradle
-          pluginManagement {
-              def flutterSdkPath = {
-                  def properties = new Properties()
-                  def propertiesFile = new File(settingsDir, 'local.properties')
-                  if (propertiesFile.exists()) {
-                      propertiesFile.withReader('UTF-8') { reader -> properties.load(reader) }
-                  }
-                  def sdkPath = properties.getProperty('flutter.sdk')
-                  assert sdkPath != null, "flutter.sdk not set in local.properties"
-                  return sdkPath
-              }()
-
-              includeBuild "$flutterSdkPath/packages/flutter_tools/gradle"
-
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-
-          plugins {
-              id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-              id "com.android.application" version "8.0.2" apply false
-              id "org.jetbrains.kotlin.android" version "1.8.22" apply false
-          }
-
-          include ":app"
-          EOF
-
-      # 11. تشغيل أداة الأيقونات للأندرويد بنجاح كامل بدون توقف
+      # 6. تشغيل أداة الأيقونات (ستقرأ ملف الـ pubspec النظيف للأندرويد وتعمل فوراً)
       - name: Run Launcher Icons Generator
         run: flutter pub run flutter_launcher_icons
 
-      # 12. أمر البناء النهائي الصارم لإخراج الـ APK الكامل
+      # 7. البناء الصافي والمباشر دون أي تعديل أو عبث خارجي بالأكواد
       - name: Build APK Release
-        run: |
-          cd android && ./gradlew clean && cd ..
-          flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
+        run: flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 13. استخراج ملف الـ APK المباشر وتجهيزه للتحميل الفوري
+      # 8. استخراج الـ APK النهائي الكامل لتقوم بتحميله على جوالك
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaChat-Full-Build-APK
+          name: SeaChat-Official-Build
           path: build/app/outputs/flutter-apk/app-release.apk
-
