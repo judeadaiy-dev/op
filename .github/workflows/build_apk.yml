@@ -1,4 +1,4 @@
-name: Standard Clean Flutter Build
+name: Ultimate Pure Flutter Build
 
 on:
   push:
@@ -36,34 +36,106 @@ jobs:
           flutter clean
           flutter pub get
 
-      # 4. توليد مجلد أندرويد قياسي يطابق ملفات مشروعك تماماً لمنع نقص الثيمات
+      # 4. توليد هيكل أندرويد قياسي سليم
       - name: Recreate Safe Android Skeleton
         run: |
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. إصلاح المانيفست بالثيمات والأيقونات الافتراضية الآمنة لفلاتر
+      # 5. حقن إعدادات الـ SDK داخل ملف الخصائص
+      - name: Configure Android SDK Properties
+        run: |
+          cat << 'EOF' > android/local.properties
+          flutter.sdk=/opt/hostedtoolcache/flutter/stable-3.22.0-x64/flutter
+          flutter.compileSdkVersion=34
+          flutter.minSdkVersion=23
+          flutter.targetSdkVersion=34
+          flutter.versionCode=1
+          flutter.versionName=1.0.0
+          EOF
+
+      # 6. كتابة ملف أندرويد الرئيسي المصحح لربط المكتبات الخارجية
+      - name: Inject Master build.gradle
+        run: |
+          cat << 'EOF' > android/build.gradle
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.buildDir = '../build'
+          subprojects {
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
+              project.evaluationDependsOn(':app')
+          }
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
+
+      # 7. كتابة ملف التطبيق الداخلي للتوافق الكامل مع القيم المقروءة
+      - name: Inject App build.gradle
+        run: |
+          cat << 'EOF' > android/app/build.gradle
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file('local.properties')
+          if (localPropertiesFile.exists()) {
+              localPropertiesFile.withReader('UTF-8') { reader ->
+                  localProperties.load(reader)
+              }
+          }
+          android {
+              namespace "com.judeadaiy.chat_app"
+              compileSdkVersion 34
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+              defaultConfig {
+                  applicationId "com.judeadaiy.chat_app"
+                  minSdkVersion 23
+                  targetSdkVersion 34
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                  }
+              }
+          }
+          flutter {
+              source '../..'
+          }
+          EOF
+
+      # 8. إصلاح المانيفست بالثيمات والأيقونات الافتراضية
       - name: Fix Android Manifest File
         run: |
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               package="com.judeadaiy.chat_app">
-
               <uses-permission android:name="android.permission.INTERNET"/>
               <uses-permission android:name="android.permission.RECORD_AUDIO" />
               <uses-permission android:name="android.permission.CAMERA" />
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
               <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
               <application
                   android:label="op"
                   android:name="${applicationName}"
                   android:icon="@mipmap/ic_launcher">
-                  
                   <meta-data
                       android:name="flutterEmbedding"
                       android:value="2" />
-                      
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
@@ -72,11 +144,9 @@ jobs:
                       android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|density|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
                       android:hardwareAccelerated="true"
                       android:windowSoftInputMode="adjustResize">
-                      
                       <meta-data
                           android:name="io.flutter.embedding.android.NormalTheme"
                           android:resource="@style/NormalTheme" />
-
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN"/>
                           <category android:name="android.intent.category.LAUNCHER"/>
@@ -86,26 +156,18 @@ jobs:
           </manifest>
           EOF
 
-      # 6. تفعيل دعم AndroidX لضمان عمل المكتبات
+      # 9. تفعيل دعم AndroidX
       - name: Ensure AndroidX Properties
         run: |
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-      # 7. ضبط إعدادات الـ SDK لملف الخصائص
-      - name: Configure Android SDK Scale
-        run: |
-          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          echo "flutter.compileSdkVersion=34" >> android/local.properties
-          echo "flutter.minSdkVersion=23" >> android/local.properties
-          echo "flutter.targetSdkVersion=34" >> android/local.properties
-
-      # 8. البناء النهائي المستقر
+      # 10. البناء النهائي الصافي للـ APK
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 9. رفع ملف الـ APK الناتج جاهزاً للتحميل
+      # 11. رفع ملف الـ APK الناتج جاهزاً للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
