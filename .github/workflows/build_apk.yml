@@ -1,4 +1,4 @@
-name: Ultimate Pure Flutter Build
+name: Pure Fixed Flutter Build
 
 on:
   push:
@@ -14,14 +14,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تهيئة بيئة الجافا المستقرة
+      # 1. بيئة الجافا المستقرة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. تهيئة محرك فلاتر المستقر
+      # 2. محرك فلاتر المستقر
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -29,35 +29,34 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. جلب الحزم وتنظيف الكاش بالكامل
+      # 3. جلب الحزم وتطهير المشروع
       - name: Install Dependencies
         run: |
           flutter pub get
           flutter clean
           flutter pub get
 
-      # 4. إعادة توليد هيكل أندرويد نقي ومتوافق
-      - name: Recreate Safe Android Skeleton
+      # 4. إعادة توليد هيكل أندرويد نقي ومعياري
+      - name: Recreate Android Project
         run: |
           rm -rf android
           flutter create . --platforms=android --org=com.judeadaiy
 
-      # 5. حقن إعدادات الـ SDK الصارمة داخل ملف الخصائص ليتعرف عليها فلاتر والمكتبات
-      - name: Configure Android SDK Properties
-        run: |
-          cat << 'EOF' > android/local.properties
-          flutter.sdk=/opt/hostedtoolcache/flutter/stable-3.22.0-x64/flutter
-          flutter.compileSdkVersion=34
-          flutter.minSdkVersion=23
-          flutter.targetSdkVersion=34
-          flutter.versionCode=1
-          flutter.versionName=1.0.0
-          EOF
-
-      # 6. كتابة ملف أندرويد الرئيسي (Master build.gradle) المتوافق مع المكتبات الخارجية
-      - name: Inject Master build.gradle
+      # 5. الحل الجذري: حقن ملف build.gradle الرئيسي مع تضمين محرك فلاتر بالكامل
+      - name: Inject Correct Master build.gradle
         run: |
           cat << 'EOF' > android/build.gradle
+          buildscript {
+              ext.kotlin_version = '1.8.22'
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.0.2'
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+              }
+          }
           allprojects {
               repositories {
                   google()
@@ -74,18 +73,20 @@ jobs:
           }
           EOF
 
-      # 7. كتابة ملف التطبيق الداخلي (App build.gradle) لحل مشكلة الـ Null تماماً
-      - name: Inject App build.gradle
+      # 6. حقن ملف build.gradle الخاص بالتطبيق الداخلي لربط الخصائص بشكل آمن
+      - name: Inject Correct App build.gradle
         run: |
           cat << 'EOF' > android/app/build.gradle
           plugins {
               id "com.android.application"
               id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
           }
+          apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+          
           android {
               namespace "com.judeadaiy.chat_app"
               compileSdkVersion 34
+              
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
@@ -106,9 +107,22 @@ jobs:
                   }
               }
           }
+          flutter {
+              source '../..'
+          }
           EOF
 
-      # 8. إصلاح المانيفست بالثيمات والأيقونات الافتراضية لحل مشاكل الـ Linking
+      # 7. حقن ملف الخصائص لتأكيد مسار الفلاتر
+      - name: Configure Android SDK Properties
+        run: |
+          cat << 'EOF' > android/local.properties
+          flutter.sdk=/opt/hostedtoolcache/flutter/stable-3.22.0-x64/flutter
+          flutter.compileSdkVersion=34
+          flutter.minSdkVersion=23
+          flutter.targetSdkVersion=34
+          EOF
+
+      # 8. ضبط ملف المانيفست بالصلاحيات الصحيحة
       - name: Fix Android Manifest File
         run: |
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
@@ -146,21 +160,20 @@ jobs:
           </manifest>
           EOF
 
-      # 9. تفعيل دعم AndroidX والـ Jetifier للمكتبات القديمة والحديثة
+      # 9. تفعيل دعم أندرويد إكس والـ Jetifier للمكتبات الخارجية
       - name: Ensure AndroidX Properties
         run: |
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-      # 10. خطوة الحسم: البناء النهائي للـ APK الصافي
+      # 10. أمر البناء النهائي النظيف للـ APK
       - name: Build APK Release
         run: |
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 11. رفع ملف الـ APK الناتج لتبدأ تحميله على هاتفك فوراً
+      # 11. رفع ملف الـ APK الناتج للتحميل المباشر
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: App-ChatApp-Release
           path: build/app/outputs/flutter-apk/app-release.apk
-
