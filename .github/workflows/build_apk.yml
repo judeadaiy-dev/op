@@ -41,11 +41,17 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 5. خطوة إعطاء صلاحية التشغيل لملفك اليدوي الصنع لمنع خطأ الصلاحيات
+      # 5. خطوة التوليد اليدوي الصارمة للملفات المفقودة (gradle-wrapper.jar) لمنع انهيار التشغيل
+      - name: Download Missing Gradle Wrapper Jar
+        run: |
+          mkdir -p android/gradle/wrapper
+          curl -Lo android/gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.0.2/gradle/wrapper/gradle-wrapper.jar
+
+      # 6. إعطاء صلاحية التشغيل لملفك اليدوي الصنع
       - name: Give Permission to Custom Gradlew
         run: chmod +x android/gradlew
 
-      # 6. بناء جسر الـ SDK والجرادل ليرتبط بملف الـ settings.gradle
+      # 7. بناء جسر الـ SDK والجرادل ليرتبط بملف الـ settings.gradle
       - name: Configure Android SDK & Gradle Bridge
         run: |
           cat << 'EOF' > android/local.properties
@@ -56,13 +62,13 @@ jobs:
           flutter.targetSdkVersion=34
           EOF
 
-      # 7. أمر البناء المباشر والنهائي
+      # 8. أمر البناء المباشر والنهائي بعد اكتمال المجلد
       - name: Build APK Release
         run: |
           cd android && ./gradlew clean && cd ..
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 8. رفع واستخراج الـ APK الجاهز تماماً
+      # 9. رفع واستخراج الـ APK الجاهز تماماً للتثبيت
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
