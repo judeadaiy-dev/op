@@ -21,7 +21,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. تهيئة محرك فلاتر المستقر (تعطيل الكاش هنا لضمان عدم سحب المكاتب المعطوبة)
+      # 2. تهيئة محرك فلاتر المستقر
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -47,7 +47,7 @@ jobs:
             touch assets/fonts/Cairo-SemiBold.ttf
           fi
 
-      # 4. مسح المجلد القديم التالف تماماً
+      # 4. مسح المجلد القديم التالف تماماً لضمان النظافة
       - name: Nuke Old Android Directory
         run: rm -rf android
 
@@ -55,8 +55,8 @@ jobs:
       - name: Core Flutter Android Generation
         run: |
           flutter create . --platforms android --org com.judeadaiy
-          
-      # 6. 🚨 الحل الهندسي: تطهير كاش فلاتر وتحميل مكاتب نقية ومحدثة 100%
+
+      # 6. تطهير كاش فلاتر وتحميل المكاتب المقفلة المستقرة
       - name: Purge Flutter Cache & Fresh Pub Get
         run: |
           flutter pub cache clean -f
@@ -66,10 +66,10 @@ jobs:
       - name: Run Launcher Icons Generator
         run: flutter pub run flutter_launcher_icons
 
-      # 8. 🚨 البناء الاحترافي الصارم: حصر التجميع لمنصة الأندرويد وتخطي تجميع مكاتب الويب واللينكس الوهمية
-      - name: Build APK Release
+      # 8. 🚨 الضربة القاضية: بناء الـ APK مع إخبار فلاتر برسمية أن الـ min-sdk هو 23 لتخطي تعارض الـ Manifest
+      - name: Build APK Release with Modern SDK Target
         run: |
-          flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
+          flutter build apk --release --no-tree-shake-icons --min-sdk=23 --target-platform android-arm,android-arm64,android-x64
           
       # 9. رفع ملف الـ APK النهائي النظيف تماماً
       - name: Upload APK Artifact
