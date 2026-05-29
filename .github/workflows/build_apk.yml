@@ -1,4 +1,4 @@
-name: Auto Repair Gradle & Native Build
+name: Manual Native Gradle Build
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. تثبيت الجافا المستقرة
+      # 1. تثبيت الجافا المتوافقة
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -29,7 +29,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      # 3. تأمين مسارات الصور والمجلدات لـ pubspec
+      # 3. تأمين مسارات الموارد لـ pubspec
       - name: Secure Assets and Icon
         run: |
           mkdir -p assets/images
@@ -37,17 +37,15 @@ jobs:
             touch assets/images/app_logo.png
           fi
 
-      # 4. جلب المكاتب
+      # 4. جلب مكاتب المشروع
       - name: Install Dependencies
         run: flutter pub get
 
-      # 5. السحر الحقيقي: إجبار فلاتر على توليد ملف gradw وملفات الأندرويد الناقصة تلقائياً وبشكل متوافق
-      - name: Auto Generate Missing Android Wrappers
-        run: |
-          flutter create . --platforms android
-          flutter pub get
+      # 5. خطوة إعطاء صلاحية التشغيل لملفك اليدوي الصنع لمنع خطأ الصلاحيات
+      - name: Give Permission to Custom Gradlew
+        run: chmod +x android/gradlew
 
-      # 6. بناء جسر الـ SDK وضبط ملف local.properties في المسار المولد
+      # 6. بناء جسر الـ SDK والجرادل ليرتبط بملف الـ settings.gradle
       - name: Configure Android SDK & Gradle Bridge
         run: |
           cat << 'EOF' > android/local.properties
@@ -58,12 +56,13 @@ jobs:
           flutter.targetSdkVersion=34
           EOF
 
-      # 7. أمر البناء المباشر بعد استعادة الملفات المفقودة
+      # 7. أمر البناء المباشر والنهائي
       - name: Build APK Release
         run: |
+          cd android && ./gradlew clean && cd ..
           flutter build apk --release --no-tree-shake-icons --target-platform android-arm,android-arm64,android-x64
 
-      # 8. رفع الـ APK الجاهز والمكتمل بنجاح
+      # 8. رفع واستخراج الـ APK الجاهز تماماً
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
