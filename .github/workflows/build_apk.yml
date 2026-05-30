@@ -189,19 +189,11 @@ jobs:
           set -e
           flutter build apk --release --split-per-abi --no-tree-shake-icons --no-pub
 
-      - name: Build release AAB
-        working-directory: ${{ steps.project.outputs.path }}
-        shell: bash
-        run: |
-          set -e
-          flutter build appbundle --release --no-tree-shake-icons --no-pub
-
       - name: Upload Android artifacts and reports
         uses: actions/upload-artifact@v4
         with:
           name: dardashati-android-build
           path: |
             ${{ steps.project.outputs.path }}/build/app/outputs/flutter-apk/*.apk
-            ${{ steps.project.outputs.path }}/build/app/outputs/bundle/release/*.aab
             ${{ steps.project.outputs.path }}/ci_reports/**
           if-no-files-found: error
