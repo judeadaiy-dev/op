@@ -35,13 +35,10 @@ jobs:
       - name: Build APK
         run: |
           flutter clean
-          flutter build apk --release --split-per-abi
-
-      - name: Locate and Upload APK
-        run: |
-          mkdir -p final_apk
-          find . -name "*.apk" -exec cp {} final_apk/ \;
-          ls -R final_apk/
+          flutter pub get
+          # إضافة --verbose لرؤية تفاصيل الملفات التي يتم تحميلها
+          # إزالة الأوامر التي قد تسبب "exit code 64"
+          flutter build apk --release --split-per-abi --verbose
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
