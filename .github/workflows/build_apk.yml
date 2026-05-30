@@ -187,13 +187,13 @@ jobs:
         shell: bash
         run: |
           set -e
-          # نستخدم ./gradlew مباشرة لتجنب فحص فلاتر الصارم
-          ./gradlew assembleRelease --stacktrace
+          # نستخدم أمر البناء المباشر
+          flutter build apk --release --split-per-abi --no-pub --android-skip-build-dependency-validation
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: |
-            ${{ steps.project.outputs.path }}/android/app/build/outputs/apk/release/*.apk
+          # نحدد المسار الذي يضع فيه Flutter ملفات الـ APK دائماً
+          path: ${{ steps.project.outputs.path }}/build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
