@@ -18,6 +18,15 @@ android {
         multiDexEnabled = true
     }
 
+    // هنا قمنا بدمج إعدادات المسار داخل الـ android بشكل صحيح
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "MyFinalApp.apk"
+        }
+    }
+
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
