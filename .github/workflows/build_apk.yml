@@ -6,11 +6,6 @@ on:
       - main
   workflow_dispatch:
 
-# هذه الإضافة تمنع تداخل عمليات البناء
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,24 +21,15 @@ jobs:
         with:
           channel: 'stable'
           
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install dependencies
-        run: flutter pub get
-        
-      - name: Build APK
+      - name: Build
         run: |
           flutter clean
           flutter pub get
-          # إضافة --verbose لرؤية تفاصيل الملفات التي يتم تحميلها
-          # إزالة الأوامر التي قد تسبب "exit code 64"
-          flutter build apk --release --split-per-abi --verbose
+          flutter build apk --release --split-per-abi
 
-      - name: Upload APKs
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apks
-          # هذا النمط سيلتقط أي ملف APK موجود في مجلد الـ build
-          path: build/**/outputs/apk/**/*.apk
-
+          # هذا السطر يبحث في أي مكان داخل مجلد المشروع عن أي ملف APK
+          path: "**/*.apk"
