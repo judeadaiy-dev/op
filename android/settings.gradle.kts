@@ -1,14 +1,17 @@
-PluginManagement {
-    val flutterSdkPath =
-        run {
-            val properties = java.util.Properties()
-            file("local.properties").inputStream().use { properties.load(it) }
-            val flutterSdkPath = properties.getProperty("flutter.sdk")
-            require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
-            flutterSdkPath
-        }
-
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+pluginManagement {
+    val flutterSdkPath = rootProject.projectDir.absolutePath + "/flutter" // مسار افتراضي
+    
+    // محاولة قراءة مسار فلاتر من ملف local.properties
+    val properties = java.util.Properties()
+    val localProperties = file("local.properties")
+    if (localProperties.exists()) {
+        localProperties.inputStream().use { properties.load(it) }
+    }
+    val flutterSdk = properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
+    
+    if (flutterSdk != null) {
+        includeBuild("$flutterSdk/packages/flutter_tools/gradle")
+    }
 
     repositories {
         google()
@@ -16,9 +19,12 @@ PluginManagement {
         gradlePluginPortal()
     }
 }
+
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    // نغير الإصدار إلى 8.8.1 أو 8.9.0 لضمان التوافق التام مع Flutter 3.44.0
     id("com.android.application") version "8.8.1" apply false
     id("org.jetbrains.kotlin.android") version "2.0.0" apply false
+    id("dev.flutter.flutter-gradle-plugin") version "1.0.0" apply false
 }
+
+include(":app")
