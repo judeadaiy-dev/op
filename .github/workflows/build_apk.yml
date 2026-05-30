@@ -31,11 +31,17 @@ jobs:
       - name: Build APK
         run: |
           flutter clean
-          flutter build apk --release --split-per-abi
+          flutter build apk --release --split-per-abi --verbose
+
+      - name: Locate and Upload APK
+        run: |
+          # العثور على أي ملف APK في مجلد المشروع ونسخه إلى مجلد الـ artifacts
+          mkdir -p final_apk
+          find build -name "*.apk" -exec cp {} final_apk/ \;
+          ls -R final_apk/  # هذا الأمر سيعرض لنا الملفات التي وجدها في السجلات لنتأكد
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: release-apks
-          # هذا المسار يبحث في المجلد الرئيسي للمشروع عن أي ملف ينتهي بـ .apk
-          path: build/app/outputs/flutter-apk/*.apk
+          path: final_apk/
