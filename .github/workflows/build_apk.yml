@@ -6,6 +6,11 @@ on:
       - main
   workflow_dispatch:
 
+# هذه الإضافة تمنع تداخل عمليات البناء
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,7 +26,6 @@ jobs:
         with:
           channel: 'stable'
           
-      # هذه الخطوة مهمة جداً لتعريف متغيرات البيئة للـ Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -31,14 +35,13 @@ jobs:
       - name: Build APK
         run: |
           flutter clean
-          flutter build apk --release --split-per-abi --verbose
+          flutter build apk --release --split-per-abi --no-daemon --quiet
 
       - name: Locate and Upload APK
         run: |
-          # العثور على أي ملف APK في مجلد المشروع ونسخه إلى مجلد الـ artifacts
           mkdir -p final_apk
-          find build -name "*.apk" -exec cp {} final_apk/ \;
-          ls -R final_apk/  # هذا الأمر سيعرض لنا الملفات التي وجدها في السجلات لنتأكد
+          find . -name "*.apk" -exec cp {} final_apk/ \;
+          ls -R final_apk/
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
