@@ -6,19 +6,18 @@ plugins {
 
 android {
     namespace = "com.judeadaiy.chat_app"
-    compileSdk = 34
+    compileSdk = 36 // تم التحديث إلى 36 كما طلب النظام
 
     defaultConfig {
         applicationId = "com.judeadaiy.chat_app"
         minSdk = 23
-        targetSdk = 34
+        targetSdk = 36 // تم التحديث إلى 36
         versionCode = 1
         versionName = "1.0.0"
         multiDexEnabled = true
     }
 
     compileOptions {
-        // نستخدم الطريقة البديلة المباشرة
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -32,6 +31,6 @@ android {
 }
 
 dependencies {
-    // تأكدنا من صيغة الـ dependencies الصحيحة لـ kts
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    // تم تحديث رقم النسخة إلى 2.1.4 بناءً على طلب النظام في الخطأ رقم 6
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
