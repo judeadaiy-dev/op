@@ -8,7 +8,7 @@ class AppTheme {
     brightness: Brightness.light,
     primaryColor: AppColors.primary,
     scaffoldBackgroundColor: AppColors.background, // ابيض
-    
+
     colorScheme: ColorScheme.light(
       primary: AppColors.primary, // بنفسجي
       secondary: AppColors.accent,
@@ -16,13 +16,13 @@ class AppTheme {
       onPrimary: AppColors.primaryForeground, // ابيض داخل البنفسجي
       onSurface: AppColors.textPrimary, // اسود للنصوص
     ),
-    
+
     // الأيقونات - سوداء
     iconTheme: const IconThemeData(
       color: AppColors.iconLight, // اسود
       size: 24,
     ),
-    
+
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.background, // ابيض
       foregroundColor: AppColors.textPrimary, // اسود للعنوان
@@ -30,8 +30,8 @@ class AppTheme {
       centerTitle: true,
       iconTheme: IconThemeData(color: AppColors.iconLight), // اسود
     ),
-    
-    cardTheme: CardTheme(
+
+    cardTheme: CardThemeData(
       elevation: 0,
       color: AppColors.card, // ابيض
       shape: RoundedRectangleBorder(
@@ -39,8 +39,8 @@ class AppTheme {
         side: BorderSide(color: Colors.grey[200]!, width: 1),
       ),
     ),
-    
-    dialogTheme: DialogTheme(
+
+    dialogTheme: DialogThemeData(
       backgroundColor: AppColors.background, // ابيض
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -57,7 +57,7 @@ class AppTheme {
         fontFamily: 'Cairo',
       ),
     ),
-    
+
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.grey[100],
@@ -76,7 +76,7 @@ class AppTheme {
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
     ),
-    
+
     // الأزرار - بنفسجي + نص ابيض
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -94,13 +94,13 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary, // بنفسجي
       ),
     ),
-    
+
     textTheme: const TextTheme(
       displayLarge: TextStyle(color: AppColors.textPrimary), // اسود
       displayMedium: TextStyle(color: AppColors.textPrimary),
@@ -115,7 +115,7 @@ class AppTheme {
       bodyMedium: TextStyle(color: AppColors.textPrimary),
       bodySmall: TextStyle(color: AppColors.textSecondary),
     ),
-    
+
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.background, // ابيض
       selectedItemColor: AppColors.primary, // بنفسجي
@@ -129,7 +129,7 @@ class AppTheme {
     brightness: Brightness.dark,
     primaryColor: AppColors.primary,
     scaffoldBackgroundColor: AppColors.backgroundDark, // #3f3f3f
-    
+
     colorScheme: ColorScheme.dark(
       primary: AppColors.primary, // بنفسجي
       secondary: AppColors.accent,
@@ -137,13 +137,13 @@ class AppTheme {
       onPrimary: AppColors.primaryForeground, // ابيض
       onSurface: AppColors.textPrimaryDark, // ابيض
     ),
-    
+
     // الأيقونات - بيضاء
     iconTheme: const IconThemeData(
       color: AppColors.iconDark, // ابيض
       size: 24,
     ),
-    
+
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.backgroundDark, // #3f3f3f
       foregroundColor: AppColors.textPrimaryDark, // ابيض
@@ -151,16 +151,16 @@ class AppTheme {
       centerTitle: true,
       iconTheme: IconThemeData(color: AppColors.iconDark), // ابيض
     ),
-    
-    cardTheme: CardTheme(
+
+    cardTheme: CardThemeData(
       elevation: 0,
       color: AppColors.cardDark, // رمادي افتح
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
     ),
-    
-    dialogTheme: DialogTheme(
+
+    dialogTheme: DialogThemeData(
       backgroundColor: AppColors.backgroundDark, // #3f3f3f
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -177,7 +177,7 @@ class AppTheme {
         fontFamily: 'Cairo',
       ),
     ),
-    
+
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: const Color(0xFF4A4A4A),
@@ -196,7 +196,7 @@ class AppTheme {
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
     ),
-    
+
     // الأزرار - كحلي + بنفسجي + نص ابيض
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -214,13 +214,13 @@ class AppTheme {
         ),
       ),
     ),
-    
+
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary, // بنفسجي
       ),
     ),
-    
+
     textTheme: const TextTheme(
       displayLarge: TextStyle(color: AppColors.textPrimaryDark), // ابيض
       displayMedium: TextStyle(color: AppColors.textPrimaryDark),
@@ -235,7 +235,7 @@ class AppTheme {
       bodyMedium: TextStyle(color: AppColors.textPrimaryDark),
       bodySmall: TextStyle(color: AppColors.textSecondaryDark),
     ),
-    
+
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.backgroundDark, // #3f3f3f
       selectedItemColor: AppColors.primary, // بنفسجي
