@@ -36,7 +36,7 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: gradle
-          
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
