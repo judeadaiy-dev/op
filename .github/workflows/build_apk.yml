@@ -26,10 +26,10 @@ jobs:
           flutter clean
           flutter pub get
           flutter build apk --release --split-per-abi
-
+          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apks
-          # هذا السطر يبحث في أي مكان داخل مجلد المشروع عن أي ملف APK
+          # هذا السطر يبحث في كافة المجلدات الفرعية عن أي ملف APK ويرفعه
           path: "**/*.apk"
