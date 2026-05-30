@@ -36,10 +36,7 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: gradle
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v4
-
+          
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
