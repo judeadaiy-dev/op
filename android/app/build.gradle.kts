@@ -1,4 +1,4 @@
-plugins {
+عplugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.judeadaiy.chat_app"
     compileSdk = 36
-    ndkVersion = "28.2.13676358" // أضفنا هذا السطر كما طلب النظام
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "com.judeadaiy.chat_app"
@@ -17,12 +17,20 @@ android {
         versionName = "1.0.0"
         multiDexEnabled = true
     }
-    // ... بقية الكود كما هو (compileOptions و kotlin)
+
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-  }
-}   
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+}
 
 dependencies {
-    // تم تحديث رقم النسخة إلى 2.1.4 بناءً على طلب النظام في الخطأ رقم 6
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
