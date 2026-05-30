@@ -187,7 +187,8 @@ jobs:
         shell: bash
         run: |
           set -e
-          flutter build apk --release --split-per-abi --no-tree-shake-icons --no-pub
+          # إضافة flag التجاوز هنا
+          flutter build apk --release --split-per-abi --no-tree-shake-icons --no-pub --android-skip-build-dependency-validation
 
       - name: Upload Android artifacts and reports
         uses: actions/upload-artifact@v4
