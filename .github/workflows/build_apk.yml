@@ -35,7 +35,7 @@ jobs:
       - name: Build APK
         run: |
           flutter clean
-          flutter build apk --release --split-per-abi --no-daemon --quiet
+          flutter build apk --release --split-per-abi
 
       - name: Locate and Upload APK
         run: |
