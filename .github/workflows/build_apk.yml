@@ -28,15 +28,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
         
-      - name: Build and Move APK
+      - name: Build APK
         run: |
           flutter clean
-          flutter build apk --release --split-per-abi --verbose
-          mkdir -p final_apk
-          find . -name "*.apk" -exec cp {} final_apk/ \;
+          flutter build apk --release --split-per-abi
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: release-apks
-          path: final_apk/
+          # هذا المسار يبحث في المجلد الرئيسي للمشروع عن أي ملف ينتهي بـ .apk
+          path: build/app/outputs/flutter-apk/*.apk
