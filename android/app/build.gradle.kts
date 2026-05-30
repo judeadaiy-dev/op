@@ -6,29 +6,21 @@ plugins {
 
 android {
     namespace = "com.judeadaiy.chat_app"
-    compileSdk = 36 // تم التحديث إلى 36 كما طلب النظام
+    compileSdk = 36
+    ndkVersion = "28.2.13676358" // أضفنا هذا السطر كما طلب النظام
 
     defaultConfig {
         applicationId = "com.judeadaiy.chat_app"
         minSdk = 23
-        targetSdk = 36 // تم التحديث إلى 36
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
         multiDexEnabled = true
     }
-
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+    // ... بقية الكود كما هو (compileOptions و kotlin)
     }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
-}
+  }
+}   
 
 dependencies {
     // تم تحديث رقم النسخة إلى 2.1.4 بناءً على طلب النظام في الخطأ رقم 6
